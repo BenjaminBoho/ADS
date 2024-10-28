@@ -39,6 +39,7 @@ dependencies:
   data_table_2: ^2.5.0
   weather_icons: ^3.0.0
   bottom_picker: ^2.8.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

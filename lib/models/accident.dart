@@ -14,6 +14,8 @@ class Accident {
   final String? accidentBackground;
   final String? accidentCause;
   final String? accidentCountermeasure;
+  final int? postalCode;
+  final String? addressDetail;
 
   Accident({
     required this.accidentId,
@@ -31,6 +33,8 @@ class Accident {
     this.accidentBackground,
     this.accidentCause,
     this.accidentCountermeasure,
+    this.postalCode,
+    this.addressDetail
   });
 
   factory Accident.fromMap(Map<String, dynamic> map) {
@@ -50,6 +54,8 @@ class Accident {
       accidentBackground: map['AccidentBackground'] as String?,
       accidentCause: map['AccidentCause'] as String?,
       accidentCountermeasure: map['AccidentCountermeasure'] as String?,
+      postalCode: map['postalCode'] as int?,
+      addressDetail: map['addressDetail'] as String?
     );
   }
 
@@ -79,6 +85,8 @@ extension AccidentExtension on Accident {
       'AccidentBackground': accidentBackground,
       'AccidentCause': accidentCause,
       'AccidentCountermeasure': accidentCountermeasure,
+      'PostalCode': postalCode,
+      'AddressDetail': addressDetail
     };
   }
 }

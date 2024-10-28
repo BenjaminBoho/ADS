@@ -1,10 +1,10 @@
 import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/services/address_services.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:accident_data_storage/widgets/save_button.dart';
-import 'package:accident_data_storage/widgets/text_field_widget.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
@@ -26,6 +26,9 @@ class AccidentPage extends StatefulWidget {
 
 class AccidentPageState extends State<AccidentPage> {
   final SupabaseService _supabaseService = SupabaseService();
+  final TextEditingController _zipCodeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+
 
   // Fields for form data
   String? selectedConstructionField;
@@ -35,7 +38,6 @@ class AccidentPageState extends State<AccidentPage> {
   String? selectedDisasterCategory;
   String? selectedAccidentCategory;
   String? selectedWeather;
-  String? selectedAccidentLocationPref;
 
   String? accidentBackground;
   String? accidentCause;
@@ -44,6 +46,10 @@ class AccidentPageState extends State<AccidentPage> {
   int? accidentYear;
   int? accidentMonth;
   int? accidentTime;
+
+  int? postalCode;
+  String? accidentLocationPref;
+  String? addressDetail;
 
   // Dropdown items
   List<Item> constructionFieldItems = [];
@@ -79,13 +85,18 @@ class AccidentPageState extends State<AccidentPage> {
       selectedDisasterCategory = widget.accident!.disasterCategory;
       selectedAccidentCategory = widget.accident!.accidentCategory;
       selectedWeather = widget.accident?.weather;
-      selectedAccidentLocationPref = widget.accident!.accidentLocationPref;
+      accidentLocationPref = widget.accident!.accidentLocationPref;
       accidentBackground = widget.accident?.accidentBackground;
       accidentCause = widget.accident?.accidentCause;
       accidentCountermeasure = widget.accident?.accidentCountermeasure;
       accidentYear = widget.accident!.accidentYear;
       accidentMonth = widget.accident!.accidentMonth;
       accidentTime = widget.accident!.accidentTime;
+      
+      postalCode = widget.accident!.postalCode;
+      addressDetail = widget.accident!.addressDetail;
+      _zipCodeController.text = postalCode != null ? postalCode.toString() : '';
+      _addressController.text = addressDetail ?? '';
     }
   }
 
@@ -108,6 +119,24 @@ class AccidentPageState extends State<AccidentPage> {
     setState(() {}); // Update the UI after fetching items
   }
 
+  Future<void> handleZipCodeSubmit(String zipCode) async {
+    final address = await fetchAddressFromPostalCode(zipCode);
+    if (address != null) {
+      setState(() {
+        _addressController.text = '${address.address2} ${address.address3}'; // 住所
+
+        // APIで取得した都道府県をドロップダウンで選択状態にする
+        accidentLocationPref = accidentLocationPrefItems
+            .firstWhere((item) => item.itemName == address.address1)
+            .itemName;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('住所が見つかりませんでした')),
+      );
+    }
+  }
+
   Future<void> saveAccident() async {
     if (widget.isEditing && widget.accident != null) {
       // Update the accident record
@@ -119,13 +148,15 @@ class AccidentPageState extends State<AccidentPage> {
         'DisasterCategory': selectedDisasterCategory,
         'AccidentCategory': selectedAccidentCategory,
         'Weather': selectedWeather,
-        'AccidentLocationPref': selectedAccidentLocationPref,
+        'AccidentLocationPref': accidentLocationPref,
         'AccidentYear': accidentYear,
         'AccidentMonth': accidentMonth,
         'AccidentTime': accidentTime,
         'AccidentBackground': accidentBackground,
         'AccidentCause': accidentCause,
         'AccidentCountermeasure': accidentCountermeasure,
+        'postalCode': postalCode,
+        'addressDetail': _addressController.text,
       };
       await _supabaseService.updateAccident(
           widget.accident!.accidentId, updatedAccidentData);
@@ -139,13 +170,15 @@ class AccidentPageState extends State<AccidentPage> {
         'DisasterCategory': selectedDisasterCategory,
         'AccidentCategory': selectedAccidentCategory,
         'Weather': selectedWeather,
-        'AccidentLocationPref': selectedAccidentLocationPref,
+        'AccidentLocationPref': accidentLocationPref,
         'AccidentYear': accidentYear,
         'AccidentMonth': accidentMonth,
         'AccidentTime': accidentTime,
         'AccidentBackground': accidentBackground,
         'AccidentCause': accidentCause,
         'AccidentCountermeasure': accidentCountermeasure,
+        'postalCode': postalCode,
+        'addressDetail': _addressController.text,
       };
       await _supabaseService.addAccident(newAccidentData);
     }
@@ -162,7 +195,7 @@ class AccidentPageState extends State<AccidentPage> {
       showErrorConstructionMethod = selectedConstructionMethod == null;
       showErrorDisasterCategory = selectedDisasterCategory == null;
       showErrorAccidentCategory = selectedAccidentCategory == null;
-      showErrorAccidentLocationPref = selectedAccidentLocationPref == null;
+      showErrorAccidentLocationPref = accidentLocationPref == null;
       showErrorAccidentYear = accidentYear == null;
       showErrorAccidentMonth = accidentMonth == null;
       showErrorAccidentTime = accidentTime == null;
@@ -187,7 +220,7 @@ class AccidentPageState extends State<AccidentPage> {
         'DisasterCategory': selectedDisasterCategory,
         'AccidentCategory': selectedAccidentCategory,
         'Weather': selectedWeather,
-        'AccidentLocationPref': selectedAccidentLocationPref,
+        'AccidentLocationPref': accidentLocationPref,
         'AccidentYear': accidentYear,
         'AccidentMonth': accidentMonth,
         'AccidentTime': accidentTime,
@@ -316,17 +349,41 @@ class AccidentPageState extends State<AccidentPage> {
                 });
               },
             ),
+            TextFormField(
+              controller: _zipCodeController,
+              decoration: const InputDecoration(
+                labelText: '郵便番号',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                postalCode = int.tryParse(value);
+                if (value.length == 7) {
+                  handleZipCodeSubmit(value); // 7桁に達したら自動で住所を取得
+                }
+              },
+              onFieldSubmitted: handleZipCodeSubmit, // 郵便番号が入力されたら住所を取得
+            ),
+
             CustomDropdown(
               label: '事故発生場所（都道府県）',
-              value: selectedAccidentLocationPref,
+              value: accidentLocationPref,
               items: accidentLocationPrefItems,
               onChanged: (value) {
                 setState(() {
-                  selectedAccidentLocationPref = value;
+                  accidentLocationPref = value;
                 });
               },
             ),
             if (showErrorAccidentLocationPref) const ValidationErrorText(),
+            TextFormField(
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: '住所',
+              ),
+              onChanged: (value) {
+                addressDetail = value;
+              },
+            ),
             // Pickers for year, month, and time
             Row(
               children: [
@@ -387,24 +444,40 @@ class AccidentPageState extends State<AccidentPage> {
               ),
             ),
             if (showErrorAccidentTime) const ValidationErrorText(),
-            // Accident background, cause, and countermeasure text fields
-            CustomTextField(
-              label: '事故に至る経緯と事故の状況',
+
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: '事故に至る経緯と事故の状況',
+              ),
               initialValue: accidentBackground,
+              keyboardType: TextInputType.multiline,
+              maxLines: null, // 複数行対応
               onChanged: (value) {
                 accidentBackground = value;
               },
             ),
-            CustomTextField(
-              label: '事故の要因（背景も含む）',
+
+            // 事故の要因（背景も含む）入力フィールド
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: '事故の要因（背景も含む）',
+              ),
               initialValue: accidentCause,
+              keyboardType: TextInputType.multiline,
+              maxLines: null, // 複数行対応
               onChanged: (value) {
                 accidentCause = value;
               },
             ),
-            CustomTextField(
-              label: '事故発生後の対策',
+
+            // 事故発生後の対策入力フィールド
+            TextFormField(
               initialValue: accidentCountermeasure,
+              decoration: const InputDecoration(
+                labelText: '事故発生後の対策',
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: null, // 複数行対応
               onChanged: (value) {
                 accidentCountermeasure = value;
               },

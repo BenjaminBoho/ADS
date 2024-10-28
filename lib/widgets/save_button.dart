@@ -13,7 +13,7 @@ class SaveButton extends StatelessWidget {
       height: 40, // Set the desired height
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(isEditing ? '更新' : '追加'),
+        child: Text(isEditing ? '更新' : '保存'),
       ),
     );
   }

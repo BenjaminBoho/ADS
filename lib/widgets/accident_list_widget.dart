@@ -32,7 +32,7 @@ class AccidentListWidget extends StatelessWidget {
           itemCount: accidents.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 1,
-            childAspectRatio: 2.6,
+            childAspectRatio: 2.5,
             mainAxisSpacing: 8.0,
             crossAxisSpacing: 8.0,
           ),

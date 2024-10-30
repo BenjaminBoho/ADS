@@ -9,6 +9,7 @@ import 'package:accident_data_storage/widgets/validation_error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
+import 'package:flutter/services.dart';
 
 class AccidentPage extends StatefulWidget {
   final Accident? accident; // Accident object for editing mode
@@ -354,6 +355,7 @@ class AccidentPageState extends State<AccidentPage> {
               decoration: const InputDecoration(
                 labelText: '郵便番号',
               ),
+              inputFormatters: [LengthLimitingTextInputFormatter(7)],
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 postalCode = int.tryParse(value);

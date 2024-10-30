@@ -120,7 +120,7 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
-    final address = await fetchAddressFromPostalCode(zipCode);
+    final address = await fetchAddressFromZipCode(zipCode);
     if (address != null) {
       setState(() {
         _addressController.text = '${address.address2} ${address.address3}'; // 住所

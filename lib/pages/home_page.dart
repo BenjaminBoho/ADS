@@ -189,22 +189,27 @@ class HomePageState extends State<HomePage> {
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '事故発生場所（都道府県）', 
-                  sortBy: '事故発生場所（都道府県）',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending, 
-                  onSortItemPressed: onSortItemPressed)
+                    label: '事故発生場所（都道府県）',
+                    sortBy: '事故発生場所（都道府県）',
+                    currentSortBy: _currentSortBy,
+                    isAscending: isAscending,
+                    onSortItemPressed: onSortItemPressed)
               ],
             ),
           ),
           const SizedBox(height: 8.0),
 
           Expanded(
-            child: AccidentListWidget(
-              accidentData: _accidentData,
-              onAccidentTap: (accident) => _navigateToAccidentPage(
-                accident: accident,
-                isEditing: true,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _fetchAccidentData(); // データを再取得
+              },
+              child: AccidentListWidget(
+                accidentData: _accidentData,
+                onAccidentTap: (accident) => _navigateToAccidentPage(
+                  accident: accident,
+                  isEditing: true,
+                ),
               ),
             ),
           ),

@@ -1,15 +1,17 @@
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart';
 import 'package:accident_data_storage/models/address.dart';
 
-Future<Address?> fetchAddressFromPostalCode(String zipCode) async {
+Future<Address?> fetchAddressFromZipCode(String zipCode) async {
   if (zipCode.length != 7) {
     return null;
   }
 
   try {
+    final zipCodeApiUrl = dotenv.env['ZIPCODE_API_URL'] ?? '';
     final response = await get(
-      Uri.parse('https://zipcloud.ibsnet.co.jp/api/search?zipcode=$zipCode'),
+      Uri.parse('$zipCodeApiUrl$zipCode'),
     );
 
     if (response.statusCode != 200) {

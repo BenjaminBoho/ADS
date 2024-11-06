@@ -9,7 +9,7 @@ class AccidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    IconData? weatherIcon = getWeatherIcon(accident.weather);
+    IconData? weatherIcon = getWeatherIcon(accident.weatherCondition);
 
     return Card(
       elevation: 4.0,

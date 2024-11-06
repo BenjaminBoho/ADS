@@ -19,11 +19,6 @@ class CustomDropdown extends StatelessWidget {
     // Create a temporary list that includes the current value if it's missing
     List<Item> dropdownItems = List.from(items);
 
-    // Check if the selected value is in the list; if not, add it temporarily
-    if (value != null && !items.any((item) => item.itemValue == value)) {
-      dropdownItems.add(Item(itemGenre: label, itemValue: value!, itemName: value!));
-    }
-
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
       value: value,

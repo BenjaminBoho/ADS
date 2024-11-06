@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -69,7 +70,7 @@ class LoginPageState extends State<LoginPage> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _login,
-              child: const Text('ログイン'),
+              child: Text(AppLocalizations.of(context)!.login),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
-import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart';
 
 String getDeviceLanguage() {
-  String locale = Intl.systemLocale;
+  String locale = PlatformDispatcher.instance.locale.toString();
+  
   return locale.split('_').first;
 }

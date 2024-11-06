@@ -71,13 +71,15 @@ class SupabaseService {
     }
   }
 
-  Future<List<Item>> fetchItems(String itemGenre, String? language) async {
+  Future<List<Item>> fetchItems(String itemGenre) async {
     try {
+      final selectedLanguage = getDeviceLanguage();
+
       final itemListData = await _client
           .from('ItemList')
           .select('*')
           .eq('ItemGenre', itemGenre)
-          .eq('ItemLang', language ?? getDeviceLanguage());
+          .eq('ItemLang', selectedLanguage);
 
       return (itemListData as List<dynamic>).map((itemMap) {
         return Item.fromMap(itemMap as Map<String, dynamic>);
@@ -106,82 +108,6 @@ class SupabaseService {
       }).toList(),
     );
   }
-
-  // Future<List<AccidentDisplayModel>> fetchAccidentsData({
-  //   Map<String, dynamic>? filters,
-  //   String? sortBy,
-  //   bool isAscending = true,
-  //   String? language,
-  // }) async {
-  //   try {
-  //     // Step 1: Fetch accidents data from the Accidents table
-  //     PostgrestFilterBuilder query =
-  //         _client.from('Accidents').select('*') as PostgrestFilterBuilder;
-
-  //     query = applyFilters(query, filters ?? {});
-  //     PostgrestTransformBuilder sortedQuery =
-  //         applySorting(query, sortBy, isAscending);
-
-  //     final accidentsData = await sortedQuery;
-  //     if (accidentsData == null) throw Exception("No accidents data received");
-
-  //     // Step 2: Fetch item list data for mapping
-  //     final itemListData = await _client
-  //         .from('ItemList')
-  //         .select('*')
-  //         .eq('ItemLang', language ?? getDeviceLanguage());
-  //     final itemList = (itemListData as List<dynamic>).map((itemMap) {
-  //       return Item.fromMap(itemMap as Map<String, dynamic>);
-  //     }).toList();
-
-  //     // Step 3: Convert accidents data to AccidentDisplayModel using item names
-  //     final accidentsList = await Future.wait(
-  //       (accidentsData as List<dynamic>).map((accidentMap) async {
-  //         final accidentDataModel =
-  //             AccidentDataModel.fromMap(accidentMap as Map<String, dynamic>);
-  //         return AccidentDisplayModel.fromDataModel(
-  //           accidentDataModel,
-  //           (itemValue, itemGenre) =>
-  //               _fetchItemName(itemList, itemValue, itemGenre),
-  //         );
-  //       }),
-  //     );
-  //     return accidentsList;
-  //   } catch (e, stackTrace) {
-  //     if (kDebugMode) {
-  //       print('Fetch Accidents error: $e');
-  //       print('Stack Trace: $stackTrace');
-  //     }
-  //     return [];
-  //   }
-  // }
-
-  // Future<List<Item>> fetchItems(String itemGenre, String language) async {
-  //   final language = getDeviceLanguage();
-  //   try {
-  //     final data = await _client
-  //         .from('ItemList')
-  //         .select()
-  //         .eq('ItemGenre', itemGenre)
-  //         .eq('ItemLang', language);
-
-  //     if (kDebugMode) {
-  //       print('Data received: $data');
-  //     }
-
-  //     final itemsList = (data as List<dynamic>).map((itemMap) {
-  //       return Item.fromMap(itemMap as Map<String, dynamic>);
-  //     }).toList();
-
-  //     return itemsList;
-  //   } catch (e, stackTrace) {
-  //     if (kDebugMode) {
-  //       print('Fetch Items error: $e');
-  //       print('Stack Trace: $stackTrace');
-  //     }
-  //     return [];
-  //   }
-  // }
 
   Future<String> _fetchItemName(
       List<Item> itemList, String itemValue, String itemGenre) async {

@@ -9,6 +9,7 @@ class AccidentDisplayModel {
   final String disasterCategory;
   final String accidentCategory;
   final String? weather;
+  final String? weatherCondition;
   final int accidentYear;
   final int accidentMonth;
   final int accidentTime;
@@ -37,6 +38,7 @@ class AccidentDisplayModel {
     this.accidentCountermeasure,
     this.postalCode,
     this.addressDetail,
+    this.weatherCondition
   });
 
   factory AccidentDisplayModel.fromMap(Map<String, dynamic> map) {
@@ -99,6 +101,7 @@ class AccidentDisplayModel {
       accidentCountermeasure: dataModel.accidentCountermeasure,
       postalCode: dataModel.postalCode,
       addressDetail: dataModel.addressDetail,
+      weatherCondition: dataModel.weather,
     );
   }
 }

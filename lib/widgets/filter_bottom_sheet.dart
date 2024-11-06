@@ -45,11 +45,10 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Future<void> fetchItems() async {
-    final language = getDeviceLanguage();
     constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField', language);
+        await _supabaseService.fetchItems('ConstructionField');
     constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType', language);
+        await _supabaseService.fetchItems('ConstructionType');
     setState(() {});
   }
 

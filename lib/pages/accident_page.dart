@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/services.dart';
-import 'package:accident_data_storage/utils/language_utils.dart';
 
 class AccidentPage extends StatefulWidget {
   final AccidentDataModel? accident; // Accident object for editing mode
@@ -103,21 +102,20 @@ class AccidentPageState extends State<AccidentPage> {
 
   // Fetch items for dropdown lists
   Future<void> fetchDropDownItems() async {
-    String language = getDeviceLanguage();
     constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField', language);
+        await _supabaseService.fetchItems('ConstructionField');
     constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType', language);
-    workTypeItems = await _supabaseService.fetchItems('WorkType', language);
+        await _supabaseService.fetchItems('ConstructionType');
+    workTypeItems = await _supabaseService.fetchItems('WorkType');
     constructionMethodItems =
-        await _supabaseService.fetchItems('ConstructionMethod', language);
+        await _supabaseService.fetchItems('ConstructionMethod');
     disasterCategoryItems =
-        await _supabaseService.fetchItems('DisasterCategory', language);
+        await _supabaseService.fetchItems('DisasterCategory');
     accidentCategoryItems =
-        await _supabaseService.fetchItems('AccidentCategory', language);
-    weatherItems = await _supabaseService.fetchItems('Weather', language);
+        await _supabaseService.fetchItems('AccidentCategory');
+    weatherItems = await _supabaseService.fetchItems('Weather');
     accidentLocationPrefItems =
-        await _supabaseService.fetchItems('AccidentLocationPref', language);
+        await _supabaseService.fetchItems('AccidentLocationPref');
 
     setState(() {}); // Update the UI after fetching items
   }
@@ -469,7 +467,7 @@ class AccidentPageState extends State<AccidentPage> {
               ),
               initialValue: accidentCause,
               keyboardType: TextInputType.multiline,
-              maxLines: null, // 複数行対応
+              maxLines: null,
               onChanged: (value) {
                 accidentCause = value;
               },

@@ -40,8 +40,11 @@ dependencies:
   weather_icons: ^3.0.0
   bottom_picker: ^2.8.0
   http: ^1.2.2
-  intl: ^0.18.0
-
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  shared_preferences: any
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -58,6 +61,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
   assets:
     - .env
   # The following line ensures that the Material Icons font is

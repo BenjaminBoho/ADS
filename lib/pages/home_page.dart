@@ -33,46 +33,14 @@ class HomePageState extends State<HomePage> {
 
   void _fetchAccidentData() {
     setState(() {
-      _accidentData = Future<List<AccidentDisplayModel>>(() async {
-        String language = getDeviceLanguage();
-        // Fetch the accidents data and items
-        final accidentsData = await _supabaseService.fetchAccidentsData(
-          filters: _currentFilters,
-          sortBy: _currentSortBy,
-          isAscending: isAscending,
-        );
-
-        final constructionFieldItems =
-            await _supabaseService.fetchItems('ConstructionField', language);
-        final constructionTypeItems =
-            await _supabaseService.fetchItems('ConstructionType', language);
-        final workTypeItems =
-            await _supabaseService.fetchItems('WorkType', language);
-        final constructionMethodItems =
-            await _supabaseService.fetchItems('ConstructionMethod', language);
-        final disasterCategoryItems =
-            await _supabaseService.fetchItems('DisasterCategory', language);
-        final accidentCategoryItems =
-            await _supabaseService.fetchItems('AccidentCategory', language);
-        final weatherItems =
-            await _supabaseService.fetchItems('Weather', language);
-        final accidentLocationPrefItems =
-            await _supabaseService.fetchItems('AccidentLocationPref', language);
-
-        final itemList = [
-          ...constructionFieldItems,
-          ...constructionTypeItems,
-          ...workTypeItems,
-          ...constructionMethodItems,
-          ...disasterCategoryItems,
-          ...accidentCategoryItems,
-          ...weatherItems,
-          ...accidentLocationPrefItems,
-        ];
-
-        // Map to AccidentDisplayModel
-        return await _supabaseService.mapAccidentsToDisplayModel(
-            accidentsData, itemList);
+      _accidentData = _supabaseService
+          .fetchAccidentsData(
+        filters: _currentFilters,
+        sortBy: _currentSortBy,
+        isAscending: isAscending,
+      )
+          .then((data) {
+        return data.map((map) => AccidentDisplayModel.fromMap(map)).toList();
       });
     });
   }

@@ -5,7 +5,10 @@ import 'package:accident_data_storage/widgets/weather_icon.dart';
 class AccidentCard extends StatelessWidget {
   final AccidentDisplayModel accident;
 
-  const AccidentCard({super.key, required this.accident});
+  const AccidentCard({
+    super.key,
+    required this.accident,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +41,7 @@ class AccidentCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10.0),
                     Text(
-                      '${accident.accidentLocationPref}',
+                      accident.accidentLocationPref,
                       style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.bold),
                     ),

@@ -13,7 +13,7 @@ class AccidentDisplayModel {
   final int accidentYear;
   final int accidentMonth;
   final int accidentTime;
-  final String? accidentLocationPref;
+  final String accidentLocationPref;
   final String? accidentBackground;
   final String? accidentCause;
   final String? accidentCountermeasure;
@@ -54,7 +54,7 @@ class AccidentDisplayModel {
       accidentYear: map['AccidentYear'] as int,
       accidentMonth: map['AccidentMonth'] as int,
       accidentTime: map['AccidentTime'] as int,
-      accidentLocationPref: map['AccidentLocationPref'] as String?,
+      accidentLocationPref: map['AccidentLocationPref'] as String,
       accidentBackground: map['AccidentBackground'] as String?,
       accidentCause: map['AccidentCause'] as String?,
       accidentCountermeasure: map['AccidentCountermeasure'] as String?,
@@ -93,9 +93,8 @@ class AccidentDisplayModel {
       accidentYear: dataModel.accidentYear,
       accidentMonth: dataModel.accidentMonth,
       accidentTime: dataModel.accidentTime,
-      accidentLocationPref: dataModel.accidentLocationPref != null
-          ? await fetchItemName(dataModel.accidentLocationPref!, 'AccidentLocationPref')
-          : null,
+      accidentLocationPref: 
+      await fetchItemName(dataModel.accidentLocationPref!, 'AccidentLocationPref'),
       accidentBackground: dataModel.accidentBackground,
       accidentCause: dataModel.accidentCause,
       accidentCountermeasure: dataModel.accidentCountermeasure,

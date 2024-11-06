@@ -1,6 +1,5 @@
 import 'package:accident_data_storage/models/accident_display.dart';
 import 'package:accident_data_storage/pages/accident_page.dart';
-import 'package:accident_data_storage/utils/language_utils.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:accident_data_storage/widgets/sort_button_widget.dart';
@@ -39,8 +38,24 @@ class HomePageState extends State<HomePage> {
         sortBy: _currentSortBy,
         isAscending: isAscending,
       )
-          .then((data) {
-        return data.map((map) => AccidentDisplayModel.fromMap(map)).toList();
+          .then((data) async {
+        // Fetch localized items for mapping
+        final genres = [
+          'ConstructionField',
+          'ConstructionType',
+          'WorkType',
+          'ConstructionMethod',
+          'DisasterCategory',
+          'AccidentCategory',
+          'AccidentLocationPref'
+        ];
+        final items = await Future.wait(
+            genres.map((genre) => _supabaseService.fetchItems(genre)));
+        final itemList =
+            items.expand((item) => item).toList(); // Flatten the list
+
+        return await _supabaseService.mapAccidentsToDisplayModel(
+            data, itemList);
       });
     });
   }

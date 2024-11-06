@@ -77,47 +77,65 @@ class AccidentPageState extends State<AccidentPage> {
     super.initState();
     fetchDropDownItems(); // Fetch items for dropdowns
     if (widget.isEditing && widget.accident != null) {
-      // Pre-fill fields for editing
-      selectedConstructionField = widget.accident!.constructionField;
-      selectedConstructionType = widget.accident!.constructionType;
-      selectedWorkType = widget.accident!.workType;
-      selectedConstructionMethod = widget.accident!.constructionMethod;
-      selectedDisasterCategory = widget.accident!.disasterCategory;
-      selectedAccidentCategory = widget.accident!.accidentCategory;
-      selectedWeather = widget.accident?.weather;
-      accidentLocationPref = widget.accident!.accidentLocationPref;
-      accidentBackground = widget.accident?.accidentBackground;
-      accidentCause = widget.accident?.accidentCause;
-      accidentCountermeasure = widget.accident?.accidentCountermeasure;
-      accidentYear = widget.accident!.accidentYear;
-      accidentMonth = widget.accident!.accidentMonth;
-      accidentTime = widget.accident!.accidentTime;
-
-      postalCode = widget.accident!.postalCode;
-      addressDetail = widget.accident!.addressDetail;
-      _zipCodeController.text = postalCode != null ? postalCode.toString() : '';
-      _addressController.text = addressDetail ?? '';
+      prefillAccidentData();
     }
   }
 
   // Fetch items for dropdown lists
   Future<void> fetchDropDownItems() async {
-    constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField');
-    constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType');
+    constructionFieldItems = await _supabaseService.fetchItems('ConstructionField');
+    constructionTypeItems = await _supabaseService.fetchItems('ConstructionType');
     workTypeItems = await _supabaseService.fetchItems('WorkType');
-    constructionMethodItems =
-        await _supabaseService.fetchItems('ConstructionMethod');
-    disasterCategoryItems =
-        await _supabaseService.fetchItems('DisasterCategory');
-    accidentCategoryItems =
-        await _supabaseService.fetchItems('AccidentCategory');
+    constructionMethodItems = await _supabaseService.fetchItems('ConstructionMethod');
+    disasterCategoryItems = await _supabaseService.fetchItems('DisasterCategory');
+    accidentCategoryItems = await _supabaseService.fetchItems('AccidentCategory');
     weatherItems = await _supabaseService.fetchItems('Weather');
-    accidentLocationPrefItems =
-        await _supabaseService.fetchItems('AccidentLocationPref');
+    accidentLocationPrefItems = await _supabaseService.fetchItems('AccidentLocationPref');
+
+    // If editing, add any missing items from the accident data to avoid errors
+    if (widget.isEditing && widget.accident != null) {
+      addMissingItems();
+    }
 
     setState(() {}); // Update the UI after fetching items
+  }
+
+  void prefillAccidentData() {
+    selectedConstructionField = widget.accident!.constructionField;
+    selectedConstructionType = widget.accident!.constructionType;
+    selectedWorkType = widget.accident!.workType;
+    selectedConstructionMethod = widget.accident!.constructionMethod;
+    selectedDisasterCategory = widget.accident!.disasterCategory;
+    selectedAccidentCategory = widget.accident!.accidentCategory;
+    selectedWeather = widget.accident?.weather;
+    accidentLocationPref = widget.accident!.accidentLocationPref;
+    accidentBackground = widget.accident?.accidentBackground;
+    accidentCause = widget.accident?.accidentCause;
+    accidentCountermeasure = widget.accident?.accidentCountermeasure;
+    accidentYear = widget.accident!.accidentYear;
+    accidentMonth = widget.accident!.accidentMonth;
+    accidentTime = widget.accident!.accidentTime;
+
+    postalCode = widget.accident!.postalCode;
+    addressDetail = widget.accident!.addressDetail;
+    _zipCodeController.text = postalCode != null ? postalCode.toString() : '';
+    _addressController.text = addressDetail ?? '';
+  }
+
+  void addMissingItems() {
+    addMissingItemToList(widget.accident!.constructionField, constructionFieldItems, 'ConstructionField');
+    addMissingItemToList(widget.accident!.constructionType, constructionTypeItems, 'ConstructionType');
+    addMissingItemToList(widget.accident!.workType, workTypeItems, 'WorkType');
+    addMissingItemToList(widget.accident!.constructionMethod, constructionMethodItems, 'ConstructionMethod');
+    addMissingItemToList(widget.accident!.disasterCategory, disasterCategoryItems, 'DisasterCategory');
+    addMissingItemToList(widget.accident!.accidentCategory, accidentCategoryItems, 'AccidentCategory');
+    addMissingItemToList(widget.accident!.accidentLocationPref, accidentLocationPrefItems, 'AccidentLocationPref');
+  }
+
+  void addMissingItemToList(String? value, List<Item> itemList, String itemGenre) {
+    if (value != null && !itemList.any((item) => item.itemValue == value)) {
+      itemList.add(Item(itemGenre: itemGenre, itemValue: value, itemName: value));
+    }
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {

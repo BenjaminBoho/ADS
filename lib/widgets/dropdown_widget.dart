@@ -16,12 +16,20 @@ class CustomDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create a temporary list that includes the current value if it's missing
+    List<Item> dropdownItems = List.from(items);
+
+    // Check if the selected value is in the list; if not, add it temporarily
+    if (value != null && !items.any((item) => item.itemValue == value)) {
+      dropdownItems.add(Item(itemGenre: label, itemValue: value!, itemName: value!));
+    }
+
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
       value: value,
-      items: items.map((item) {
+      items: dropdownItems.map((item) {
         return DropdownMenuItem<String>(
-          value: item.itemName,
+          value: item.itemValue,
           child: Text(item.itemName),
         );
       }).toList(),

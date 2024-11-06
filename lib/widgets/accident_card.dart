@@ -1,9 +1,9 @@
+import 'package:accident_data_storage/models/accident_display.dart';
 import 'package:flutter/material.dart';
-import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/widgets/weather_icon.dart';
 
 class AccidentCard extends StatelessWidget {
-  final Accident accident;
+  final AccidentDisplayModel accident;
 
   const AccidentCard({super.key, required this.accident});
 

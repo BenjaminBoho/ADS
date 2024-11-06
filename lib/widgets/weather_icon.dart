@@ -3,19 +3,17 @@ import 'package:weather_icons/weather_icons.dart';
 
 IconData? getWeatherIcon(String? weatherCondition) {
   switch (weatherCondition) {
-    case '晴れ':
-    case '晴':
+    case 'Sunny':
       return WeatherIcons.day_sunny;
-    case '曇り':
-    case '曇':
+    case 'Cloudy':
       return WeatherIcons.cloudy;
-    case '雨':
+    case 'Rain':
       return WeatherIcons.rain;
-    case '雪':
+    case 'Snow':
       return WeatherIcons.snow;
-    case '強風':
+    case 'StrongWind':
       return WeatherIcons.strong_wind;
-    case 'その他':
+    case 'Others':
       return null;
     default:
       return null;

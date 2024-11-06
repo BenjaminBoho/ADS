@@ -1,4 +1,4 @@
-import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/models/accident_data.dart';
 import 'package:accident_data_storage/services/address_services.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
@@ -10,9 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/services.dart';
+import 'package:accident_data_storage/utils/language_utils.dart';
 
 class AccidentPage extends StatefulWidget {
-  final Accident? accident; // Accident object for editing mode
+  final AccidentDataModel? accident; // Accident object for editing mode
   final bool isEditing; // Flag to indicate if this is edit mode
 
   const AccidentPage({
@@ -29,7 +30,6 @@ class AccidentPageState extends State<AccidentPage> {
   final SupabaseService _supabaseService = SupabaseService();
   final TextEditingController _zipCodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-
 
   // Fields for form data
   String? selectedConstructionField;
@@ -76,7 +76,7 @@ class AccidentPageState extends State<AccidentPage> {
   @override
   void initState() {
     super.initState();
-    fetchItems(); // Fetch items for dropdowns
+    fetchDropDownItems(); // Fetch items for dropdowns
     if (widget.isEditing && widget.accident != null) {
       // Pre-fill fields for editing
       selectedConstructionField = widget.accident!.constructionField;
@@ -93,7 +93,7 @@ class AccidentPageState extends State<AccidentPage> {
       accidentYear = widget.accident!.accidentYear;
       accidentMonth = widget.accident!.accidentMonth;
       accidentTime = widget.accident!.accidentTime;
-      
+
       postalCode = widget.accident!.postalCode;
       addressDetail = widget.accident!.addressDetail;
       _zipCodeController.text = postalCode != null ? postalCode.toString() : '';
@@ -102,21 +102,23 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   // Fetch items for dropdown lists
-  Future<void> fetchItems() async {
+  Future<void> fetchDropDownItems() async {
+    String language = getDeviceLanguage();
     constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField');
+        await _supabaseService.fetchItems('ConstructionField', language);
     constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType');
-    workTypeItems = await _supabaseService.fetchItems('WorkType');
+        await _supabaseService.fetchItems('ConstructionType', language);
+    workTypeItems = await _supabaseService.fetchItems('WorkType', language);
     constructionMethodItems =
-        await _supabaseService.fetchItems('ConstructionMethod');
+        await _supabaseService.fetchItems('ConstructionMethod', language);
     disasterCategoryItems =
-        await _supabaseService.fetchItems('DisasterCategory');
+        await _supabaseService.fetchItems('DisasterCategory', language);
     accidentCategoryItems =
-        await _supabaseService.fetchItems('AccidentCategory');
-    weatherItems = await _supabaseService.fetchItems('Weather');
+        await _supabaseService.fetchItems('AccidentCategory', language);
+    weatherItems = await _supabaseService.fetchItems('Weather', language);
     accidentLocationPrefItems =
-        await _supabaseService.fetchItems('AccidentLocationPref');
+        await _supabaseService.fetchItems('AccidentLocationPref', language);
+
     setState(() {}); // Update the UI after fetching items
   }
 
@@ -124,7 +126,8 @@ class AccidentPageState extends State<AccidentPage> {
     final address = await fetchAddressFromZipCode(zipCode);
     if (address != null) {
       setState(() {
-        _addressController.text = '${address.address2} ${address.address3}'; // 住所
+        _addressController.text =
+            '${address.address2} ${address.address3}'; // 住所
 
         // APIで取得した都道府県をドロップダウンで選択状態にする
         accidentLocationPref = accidentLocationPrefItems

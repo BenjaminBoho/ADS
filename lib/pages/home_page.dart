@@ -1,10 +1,12 @@
+import 'package:accident_data_storage/models/accident_display.dart';
 import 'package:accident_data_storage/pages/accident_page.dart';
+import 'package:accident_data_storage/utils/language_utils.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:accident_data_storage/widgets/sort_button_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
-import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/models/accident_data.dart';
 import 'package:accident_data_storage/widgets/filter_bottom_sheet.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,7 +18,7 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService();
-  late Future<List<Accident>> _accidentData;
+  late Future<List<AccidentDisplayModel>> _accidentData;
 
   Map<String, dynamic>? _currentFilters;
   String? _currentSortBy = 'ID';
@@ -31,11 +33,47 @@ class HomePageState extends State<HomePage> {
 
   void _fetchAccidentData() {
     setState(() {
-      _accidentData = _supabaseService.fetchAccidents(
-        filters: _currentFilters,
-        sortBy: _currentSortBy,
-        isAscending: isAscending,
-      );
+      _accidentData = Future<List<AccidentDisplayModel>>(() async {
+        String language = getDeviceLanguage();
+        // Fetch the accidents data and items
+        final accidentsData = await _supabaseService.fetchAccidentsData(
+          filters: _currentFilters,
+          sortBy: _currentSortBy,
+          isAscending: isAscending,
+        );
+
+        final constructionFieldItems =
+            await _supabaseService.fetchItems('ConstructionField', language);
+        final constructionTypeItems =
+            await _supabaseService.fetchItems('ConstructionType', language);
+        final workTypeItems =
+            await _supabaseService.fetchItems('WorkType', language);
+        final constructionMethodItems =
+            await _supabaseService.fetchItems('ConstructionMethod', language);
+        final disasterCategoryItems =
+            await _supabaseService.fetchItems('DisasterCategory', language);
+        final accidentCategoryItems =
+            await _supabaseService.fetchItems('AccidentCategory', language);
+        final weatherItems =
+            await _supabaseService.fetchItems('Weather', language);
+        final accidentLocationPrefItems =
+            await _supabaseService.fetchItems('AccidentLocationPref', language);
+
+        final itemList = [
+          ...constructionFieldItems,
+          ...constructionTypeItems,
+          ...workTypeItems,
+          ...constructionMethodItems,
+          ...disasterCategoryItems,
+          ...accidentCategoryItems,
+          ...weatherItems,
+          ...accidentLocationPrefItems,
+        ];
+
+        // Map to AccidentDisplayModel
+        return await _supabaseService.mapAccidentsToDisplayModel(
+            accidentsData, itemList);
+      });
     });
   }
 
@@ -54,19 +92,42 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToAccidentPage(
-      {Accident? accident, required bool isEditing}) async {
+      {AccidentDisplayModel? accident, required bool isEditing}) async {
+    // Convert AccidentDisplayModel to AccidentDataModel if in editing mode
+    AccidentDataModel? accidentData = isEditing && accident != null
+        ? AccidentDataModel(
+            accidentId: accident.accidentId,
+            constructionField: accident.constructionField,
+            constructionType: accident.constructionType,
+            workType: accident.workType,
+            constructionMethod: accident.constructionMethod,
+            disasterCategory: accident.disasterCategory,
+            accidentCategory: accident.accidentCategory,
+            weather: accident.weather,
+            accidentYear: accident.accidentYear,
+            accidentMonth: accident.accidentMonth,
+            accidentTime: accident.accidentTime,
+            accidentLocationPref: accident.accidentLocationPref,
+            accidentBackground: accident.accidentBackground,
+            accidentCause: accident.accidentCause,
+            accidentCountermeasure: accident.accidentCountermeasure,
+            postalCode: accident.postalCode,
+            addressDetail: accident.addressDetail,
+          )
+        : null;
+
     bool? result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AccidentPage(
-          accident: accident,
+          accident: accidentData,
           isEditing: isEditing,
         ),
       ),
     );
 
     if (result == true) {
-      _fetchAccidentData(); // Refresh data if an accident was added or updated
+      _fetchAccidentData();
     }
   }
 

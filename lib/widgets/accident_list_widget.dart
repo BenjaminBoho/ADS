@@ -1,10 +1,10 @@
+import 'package:accident_data_storage/models/accident_display.dart';
 import 'package:flutter/material.dart';
-import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/widgets/accident_card.dart';
 
 class AccidentListWidget extends StatelessWidget {
-  final Future<List<Accident>> accidentData;
-  final Function(Accident) onAccidentTap;
+  final Future<List<AccidentDisplayModel>> accidentData;
+  final Function(AccidentDisplayModel) onAccidentTap;
 
   const AccidentListWidget({
     super.key,
@@ -14,7 +14,7 @@ class AccidentListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Accident>>(
+    return FutureBuilder<List<AccidentDisplayModel>>(
       future: accidentData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {

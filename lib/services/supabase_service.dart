@@ -1,7 +1,10 @@
+import 'package:accident_data_storage/models/accident_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/item.dart';
+import 'package:accident_data_storage/utils/language_utils.dart';
+import 'package:accident_data_storage/services/query_helpers.dart';
+import 'package:accident_data_storage/models/accident_display.dart';
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
@@ -43,124 +46,155 @@ class SupabaseService {
     }
   }
 
-  Future<List<Accident>> fetchAccidents(
-      {Map<String, dynamic>? filters,
-      String? sortBy,
-      bool isAscending = true}) async {
+  Future<List<Map<String, dynamic>>> fetchAccidentsData({
+    Map<String, dynamic>? filters,
+    String? sortBy,
+    bool isAscending = true,
+  }) async {
     try {
-      var query = _client.from('Accidents').select('*');
+      PostgrestFilterBuilder query =
+          _client.from('Accidents').select('*') as PostgrestFilterBuilder;
+      query = applyFilters(query, filters ?? {});
+      PostgrestTransformBuilder sortedQuery =
+          applySorting(query, sortBy, isAscending);
 
-      // Apply filters if provided
-      if (filters != null && filters.isNotEmpty) {
-        if (filters['constructionField'] != null) {
-          query = query.eq('ConstructionField', filters['constructionField']);
-        }
-        if (filters['constructionType'] != null) {
-          query = query.eq('ConstructionType', filters['constructionType']);
-        }
-        if (filters['accidentBackground'] != null &&
-            filters['accidentBackground'] != '') {
-          query = query.ilike(
-              'AccidentBackground', '%${filters['accidentBackground']}%');
-        }
+      final accidentsData = await sortedQuery;
+      if (accidentsData == null) throw Exception("No accidents data received");
 
-        // Time range filters
-        int? fromYear = filters['fromYear'];
-        int? toYear = filters['toYear'];
-        int? fromMonth = filters['fromMonth'];
-        int? toMonth = filters['toMonth'];
-        int? fromTime = filters['fromTime'];
-        int? toTime = filters['toTime'];
-
-        if (fromYear != null) query = query.gte('AccidentYear', fromYear);
-        if (toYear != null) query = query.lte('AccidentYear', toYear);
-        if (fromMonth != null) query = query.gte('AccidentMonth', fromMonth);
-        if (toMonth != null) query = query.lte('AccidentMonth', toMonth);
-        if (fromTime != null) query = query.gte('AccidentTime', fromTime);
-        if (toTime != null) query = query.lte('AccidentTime', toTime);
-      }
-
-      // ソートを適用するためにTransformBuilderに変換する
-      PostgrestTransformBuilder<dynamic> sortedQuery = query;
-      if (sortBy != null) {
-        if (sortBy == '事故発生年・月・時間') {
-          sortedQuery = sortedQuery
-              .order('AccidentYear', ascending: isAscending)
-              .order('AccidentMonth', ascending: isAscending)
-              .order('AccidentTime', ascending: isAscending);
-        } else {
-          String dbColumn = _getDbColumnName(sortBy);
-          sortedQuery = sortedQuery.order(dbColumn, ascending: isAscending);
-        }
-      }
-
-      // Execute the query and get the data
-      final data = await sortedQuery;
-
-      if (kDebugMode) {
-        print('Data received: $data');
-      }
-
-      final accidentsList = (data as List<dynamic>).map((accidentMap) {
-        return Accident.fromMap(accidentMap as Map<String, dynamic>);
-      }).toList();
-
-      return accidentsList;
+      return accidentsData as List<Map<String, dynamic>>;
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        print('Fetch Accidents error: $e');
+        print('Fetch Accident Data error: $e');
         print('Stack Trace: $stackTrace');
       }
       return [];
     }
   }
 
-  String _getDbColumnName(String sortBy) {
-    switch (sortBy) {
-      case 'ID':
-        return 'AccidentId';
-      case '工事分野':
-        return 'ConstructionField';
-      case '工事の種類':
-        return 'ConstructionType';
-      case '工種':
-        return 'WorkType';
-      case '工法・形式名':
-        return 'ConstructionMethod';
-      case '災害分類':
-        return 'DisasterCategory';
-      case '事故分類':
-        return 'AccidentCategory';
-      case '天候':
-        return 'Weather';
-      case '事故発生場所（都道府県）':
-        return 'AccidentLocationPref';
-      default:
-        return sortBy;
-    }
-  }
-
-  Future<List<Item>> fetchItems(String itemGenre) async {
+  Future<List<Item>> fetchItems(String itemGenre, String? language) async {
     try {
-      final data =
-          await _client.from('ItemList').select().eq('ItemGenre', itemGenre);
+      final itemListData = await _client
+          .from('ItemList')
+          .select('*')
+          .eq('ItemGenre', itemGenre)
+          .eq('ItemLang', language ?? getDeviceLanguage());
 
-      if (kDebugMode) {
-        print('Data received: $data');
-      }
-
-      final itemsList = (data as List<dynamic>).map((itemMap) {
+      return (itemListData as List<dynamic>).map((itemMap) {
         return Item.fromMap(itemMap as Map<String, dynamic>);
       }).toList();
-
-      return itemsList;
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        print('Fetch Items error: $e');
+        print('Fetch Item List Data error: $e');
         print('Stack Trace: $stackTrace');
       }
       return [];
     }
+  }
+
+  Future<List<AccidentDisplayModel>> mapAccidentsToDisplayModel(
+    List<Map<String, dynamic>> accidentsData,
+    List<Item> itemList,
+  ) async {
+    return await Future.wait(
+      accidentsData.map((accidentMap) async {
+        final accidentDataModel = AccidentDataModel.fromMap(accidentMap);
+        return AccidentDisplayModel.fromDataModel(
+          accidentDataModel,
+          (itemValue, itemGenre) =>
+              _fetchItemName(itemList, itemValue, itemGenre),
+        );
+      }).toList(),
+    );
+  }
+
+  // Future<List<AccidentDisplayModel>> fetchAccidentsData({
+  //   Map<String, dynamic>? filters,
+  //   String? sortBy,
+  //   bool isAscending = true,
+  //   String? language,
+  // }) async {
+  //   try {
+  //     // Step 1: Fetch accidents data from the Accidents table
+  //     PostgrestFilterBuilder query =
+  //         _client.from('Accidents').select('*') as PostgrestFilterBuilder;
+
+  //     query = applyFilters(query, filters ?? {});
+  //     PostgrestTransformBuilder sortedQuery =
+  //         applySorting(query, sortBy, isAscending);
+
+  //     final accidentsData = await sortedQuery;
+  //     if (accidentsData == null) throw Exception("No accidents data received");
+
+  //     // Step 2: Fetch item list data for mapping
+  //     final itemListData = await _client
+  //         .from('ItemList')
+  //         .select('*')
+  //         .eq('ItemLang', language ?? getDeviceLanguage());
+  //     final itemList = (itemListData as List<dynamic>).map((itemMap) {
+  //       return Item.fromMap(itemMap as Map<String, dynamic>);
+  //     }).toList();
+
+  //     // Step 3: Convert accidents data to AccidentDisplayModel using item names
+  //     final accidentsList = await Future.wait(
+  //       (accidentsData as List<dynamic>).map((accidentMap) async {
+  //         final accidentDataModel =
+  //             AccidentDataModel.fromMap(accidentMap as Map<String, dynamic>);
+  //         return AccidentDisplayModel.fromDataModel(
+  //           accidentDataModel,
+  //           (itemValue, itemGenre) =>
+  //               _fetchItemName(itemList, itemValue, itemGenre),
+  //         );
+  //       }),
+  //     );
+  //     return accidentsList;
+  //   } catch (e, stackTrace) {
+  //     if (kDebugMode) {
+  //       print('Fetch Accidents error: $e');
+  //       print('Stack Trace: $stackTrace');
+  //     }
+  //     return [];
+  //   }
+  // }
+
+  // Future<List<Item>> fetchItems(String itemGenre, String language) async {
+  //   final language = getDeviceLanguage();
+  //   try {
+  //     final data = await _client
+  //         .from('ItemList')
+  //         .select()
+  //         .eq('ItemGenre', itemGenre)
+  //         .eq('ItemLang', language);
+
+  //     if (kDebugMode) {
+  //       print('Data received: $data');
+  //     }
+
+  //     final itemsList = (data as List<dynamic>).map((itemMap) {
+  //       return Item.fromMap(itemMap as Map<String, dynamic>);
+  //     }).toList();
+
+  //     return itemsList;
+  //   } catch (e, stackTrace) {
+  //     if (kDebugMode) {
+  //       print('Fetch Items error: $e');
+  //       print('Stack Trace: $stackTrace');
+  //     }
+  //     return [];
+  //   }
+  // }
+
+  Future<String> _fetchItemName(
+      List<Item> itemList, String itemValue, String itemGenre) async {
+    // Find the matching item name for a given value and genre
+    final item = itemList.firstWhere(
+      (item) => item.itemValue == itemValue && item.itemGenre == itemGenre,
+      orElse: () => Item(
+          itemGenre: itemGenre,
+          itemValue: itemValue,
+          itemName: itemValue), // Return the value if not found
+    );
+    return Future.value(item
+        .itemName); // Wrap the result in Future.value to match Future<String> type
   }
 
   Future<void> addAccident(Map<String, dynamic> accidentData) async {
@@ -173,7 +207,8 @@ class SupabaseService {
     }
   }
 
-  Future<void> updateAccident(int accidentId, Map<String, dynamic> accidentData) async {
+  Future<void> updateAccident(
+      int accidentId, Map<String, dynamic> accidentData) async {
     try {
       await _client
           .from('Accidents')
@@ -186,12 +221,9 @@ class SupabaseService {
     }
   }
 
-    Future<void> deleteAccident(int accidentId) async {
+  Future<void> deleteAccident(int accidentId) async {
     try {
-      await _client
-          .from('Accidents')
-          .delete()
-          .eq('AccidentId', accidentId);
+      await _client.from('Accidents').delete().eq('AccidentId', accidentId);
     } catch (e) {
       if (kDebugMode) {
         print('Error deleting accident: $e');

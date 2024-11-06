@@ -4,6 +4,7 @@ import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
+import 'package:accident_data_storage/utils/language_utils.dart';
 
 class FilterBottomSheet extends StatefulWidget {
   final Function(Map<String, dynamic> filters) onApplyFilters;
@@ -44,10 +45,11 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Future<void> fetchItems() async {
+    final language = getDeviceLanguage();
     constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField');
+        await _supabaseService.fetchItems('ConstructionField', language);
     constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType');
+        await _supabaseService.fetchItems('ConstructionType', language);
     setState(() {});
   }
 

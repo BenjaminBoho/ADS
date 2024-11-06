@@ -1,4 +1,4 @@
-class Accident {
+class AccidentDataModel {
   final int accidentId;
   final String constructionField;
   final String constructionType;
@@ -17,7 +17,7 @@ class Accident {
   final int? postalCode;
   final String? addressDetail;
 
-  Accident({
+  AccidentDataModel({
     required this.accidentId,
     required this.constructionField,
     required this.constructionType,
@@ -37,8 +37,8 @@ class Accident {
     this.addressDetail
   });
 
-  factory Accident.fromMap(Map<String, dynamic> map) {
-    return Accident(
+  factory AccidentDataModel.fromMap(Map<String, dynamic> map) {
+    return AccidentDataModel(
       accidentId: map['AccidentId'] as int,
       constructionField: map['ConstructionField'] as String,
       constructionType: map['ConstructionType'] as String,
@@ -67,7 +67,7 @@ class Accident {
   }
 }
 
-extension AccidentExtension on Accident {
+extension AccidentExtension on AccidentDataModel {
   Map<String, dynamic> toMap() {
     return {
       'AccidentId': accidentId,

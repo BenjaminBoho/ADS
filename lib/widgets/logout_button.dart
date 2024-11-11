@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LogoutButton extends StatelessWidget {
   final SupabaseService supabaseService;
@@ -8,22 +9,23 @@ class LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return IconButton(
       icon: const Icon(Icons.logout),
       onPressed: () async {
         bool? confirmLogout = await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Center(child: Text('ログアウト')),
-            content: const Text('ログアウトしてもよろしいですか？'),
+            title: Center(child: Text(localizations.logout)),
+            content: Text(localizations.logoutConfirm),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('キャンセル'),
+                child: Text(localizations.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('ログアウト'),
+                child: Text(localizations.logout),
               ),
             ],
           ),

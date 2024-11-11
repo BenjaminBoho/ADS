@@ -1,4 +1,4 @@
-import 'package:accident_data_storage/models/accident_data.dart';
+import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/services/address_services.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
@@ -6,14 +6,16 @@ import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:accident_data_storage/widgets/save_button.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AccidentPage extends StatefulWidget {
-  final AccidentDataModel? accident; // Accident object for editing mode
-  final bool isEditing; // Flag to indicate if this is edit mode
+  final Accident? accident;
+  final bool isEditing;
 
   const AccidentPage({
     super.key,
@@ -27,8 +29,14 @@ class AccidentPage extends StatefulWidget {
 
 class AccidentPageState extends State<AccidentPage> {
   final SupabaseService _supabaseService = SupabaseService();
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
   final TextEditingController _zipCodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+
+  final TextEditingController _backgroundController = TextEditingController();
+  final TextEditingController _causeController = TextEditingController();
+  final TextEditingController _countermeasureController =
+      TextEditingController();
 
   // Fields for form data
   String? selectedConstructionField;
@@ -47,7 +55,7 @@ class AccidentPageState extends State<AccidentPage> {
   int? accidentMonth;
   int? accidentTime;
 
-  int? postalCode;
+  int? zipcode;
   String? accidentLocationPref;
   String? addressDetail;
 
@@ -75,67 +83,97 @@ class AccidentPageState extends State<AccidentPage> {
   @override
   void initState() {
     super.initState();
-    fetchDropDownItems(); // Fetch items for dropdowns
-    if (widget.isEditing && widget.accident != null) {
-      prefillAccidentData();
-    }
+    // Initialize dropdown selections if editing
+    fetchDropDownItems().then((_) {
+      if (widget.isEditing && widget.accident != null) {
+        setState(() {
+          selectedConstructionField = constructionFieldItems
+              .firstWhere(
+                  (item) => item.itemName == widget.accident!.constructionField)
+              .itemValue;
+          // Debug print for constructionField
+          if (kDebugMode) {
+            print(
+                "Selected Construction Field: ${widget.accident!.constructionField}");
+            print(
+                "Mapped Construction Field Value: $selectedConstructionField");
+          }
+          selectedConstructionType = constructionTypeItems
+              .firstWhere(
+                  (item) => item.itemName == widget.accident!.constructionType)
+              .itemValue;
+          selectedWorkType = workTypeItems
+              .firstWhere((item) => item.itemName == widget.accident!.workType)
+              .itemValue;
+          selectedConstructionMethod = constructionMethodItems
+              .firstWhere((item) =>
+                  item.itemName == widget.accident!.constructionMethod)
+              .itemValue;
+          selectedDisasterCategory = disasterCategoryItems
+              .firstWhere(
+                  (item) => item.itemName == widget.accident!.disasterCategory)
+              .itemValue;
+          selectedAccidentCategory = accidentCategoryItems
+              .firstWhere(
+                  (item) => item.itemName == widget.accident!.accidentCategory)
+              .itemValue;
+          selectedWeather = weatherItems
+              .firstWhere((item) => item.itemValue == widget.accident!.weather)
+              .itemValue;
+          accidentLocationPref = accidentLocationPrefItems
+              .firstWhere((item) => item.itemName == widget.accident!.accidentLocationPref)
+              .itemValue;
+
+          accidentYear = widget.accident!.accidentYear;
+          accidentMonth = widget.accident!.accidentMonth;
+          accidentTime = widget.accident!.accidentTime;
+
+          _backgroundController.text =
+              widget.accident!.accidentBackground ?? '';
+          _causeController.text = widget.accident!.accidentCause ?? '';
+          _countermeasureController.text =
+              widget.accident!.accidentCountermeasure ?? '';
+
+          if (kDebugMode) {
+            print("Loaded accident data: "
+                "Background: ${widget.accident!.accidentBackground}, "
+                "Cause: ${widget.accident!.accidentCause}, "
+                "Countermeasure: ${widget.accident!.accidentCountermeasure}, "
+                "Postal Code: ${widget.accident!.zipcode}, "
+                "Address Detail: ${widget.accident!.addressDetail}");
+          }
+
+          zipcode = widget.accident!.zipcode;
+          addressDetail = widget.accident!.addressDetail;
+
+          _zipCodeController.text = zipcode?.toString() ?? '';
+          _addressController.text = addressDetail ?? '';
+        });
+      } else {
+        if (kDebugMode)
+          print("Editing mode is off or widget.accident is null.");
+      }
+    });
   }
 
   // Fetch items for dropdown lists
   Future<void> fetchDropDownItems() async {
-    constructionFieldItems = await _supabaseService.fetchItems('ConstructionField');
-    constructionTypeItems = await _supabaseService.fetchItems('ConstructionType');
+    constructionFieldItems =
+        await _supabaseService.fetchItems('ConstructionField');
+    constructionTypeItems =
+        await _supabaseService.fetchItems('ConstructionType');
     workTypeItems = await _supabaseService.fetchItems('WorkType');
-    constructionMethodItems = await _supabaseService.fetchItems('ConstructionMethod');
-    disasterCategoryItems = await _supabaseService.fetchItems('DisasterCategory');
-    accidentCategoryItems = await _supabaseService.fetchItems('AccidentCategory');
+    constructionMethodItems =
+        await _supabaseService.fetchItems('ConstructionMethod');
+    disasterCategoryItems =
+        await _supabaseService.fetchItems('DisasterCategory');
+    accidentCategoryItems =
+        await _supabaseService.fetchItems('AccidentCategory');
     weatherItems = await _supabaseService.fetchItems('Weather');
-    accidentLocationPrefItems = await _supabaseService.fetchItems('AccidentLocationPref');
-
-    // If editing, add any missing items from the accident data to avoid errors
-    if (widget.isEditing && widget.accident != null) {
-      addMissingItems();
-    }
+    accidentLocationPrefItems =
+        await _supabaseService.fetchItems('AccidentLocationPref');
 
     setState(() {}); // Update the UI after fetching items
-  }
-
-  void prefillAccidentData() {
-    selectedConstructionField = widget.accident!.constructionField;
-    selectedConstructionType = widget.accident!.constructionType;
-    selectedWorkType = widget.accident!.workType;
-    selectedConstructionMethod = widget.accident!.constructionMethod;
-    selectedDisasterCategory = widget.accident!.disasterCategory;
-    selectedAccidentCategory = widget.accident!.accidentCategory;
-    selectedWeather = widget.accident?.weather;
-    accidentLocationPref = widget.accident!.accidentLocationPref;
-    accidentBackground = widget.accident?.accidentBackground;
-    accidentCause = widget.accident?.accidentCause;
-    accidentCountermeasure = widget.accident?.accidentCountermeasure;
-    accidentYear = widget.accident!.accidentYear;
-    accidentMonth = widget.accident!.accidentMonth;
-    accidentTime = widget.accident!.accidentTime;
-
-    postalCode = widget.accident!.postalCode;
-    addressDetail = widget.accident!.addressDetail;
-    _zipCodeController.text = postalCode != null ? postalCode.toString() : '';
-    _addressController.text = addressDetail ?? '';
-  }
-
-  void addMissingItems() {
-    addMissingItemToList(widget.accident!.constructionField, constructionFieldItems, 'ConstructionField');
-    addMissingItemToList(widget.accident!.constructionType, constructionTypeItems, 'ConstructionType');
-    addMissingItemToList(widget.accident!.workType, workTypeItems, 'WorkType');
-    addMissingItemToList(widget.accident!.constructionMethod, constructionMethodItems, 'ConstructionMethod');
-    addMissingItemToList(widget.accident!.disasterCategory, disasterCategoryItems, 'DisasterCategory');
-    addMissingItemToList(widget.accident!.accidentCategory, accidentCategoryItems, 'AccidentCategory');
-    addMissingItemToList(widget.accident!.accidentLocationPref, accidentLocationPrefItems, 'AccidentLocationPref');
-  }
-
-  void addMissingItemToList(String? value, List<Item> itemList, String itemGenre) {
-    if (value != null && !itemList.any((item) => item.itemValue == value)) {
-      itemList.add(Item(itemGenre: itemGenre, itemValue: value, itemName: value));
-    }
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
@@ -152,13 +190,20 @@ class AccidentPageState extends State<AccidentPage> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('住所が見つかりませんでした')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
       );
     }
   }
 
   Future<void> saveAccident() async {
     if (widget.isEditing && widget.accident != null) {
+      // Retrieve the latest values from the controllers
+      accidentBackground = _backgroundController.text;
+      accidentCause = _causeController.text;
+      accidentCountermeasure = _countermeasureController.text;
+      zipcode = int.tryParse(_zipCodeController.text);
+      addressDetail = _addressController.text;
+
       // Update the accident record
       Map<String, dynamic> updatedAccidentData = {
         'ConstructionField': selectedConstructionField,
@@ -175,8 +220,8 @@ class AccidentPageState extends State<AccidentPage> {
         'AccidentBackground': accidentBackground,
         'AccidentCause': accidentCause,
         'AccidentCountermeasure': accidentCountermeasure,
-        'postalCode': postalCode,
-        'addressDetail': _addressController.text,
+        'Zipcode': zipcode,
+        'AddressDetail': _addressController.text,
       };
       await _supabaseService.updateAccident(
           widget.accident!.accidentId, updatedAccidentData);
@@ -197,8 +242,8 @@ class AccidentPageState extends State<AccidentPage> {
         'AccidentBackground': accidentBackground,
         'AccidentCause': accidentCause,
         'AccidentCountermeasure': accidentCountermeasure,
-        'postalCode': postalCode,
-        'addressDetail': _addressController.text,
+        'Zipcode': zipcode,
+        'AddressDetail': _addressController.text,
       };
       await _supabaseService.addAccident(newAccidentData);
     }
@@ -208,6 +253,13 @@ class AccidentPageState extends State<AccidentPage> {
 
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
+    // Retrieve the latest values from the controllers
+    accidentBackground = _backgroundController.text;
+    accidentCause = _causeController.text;
+    accidentCountermeasure = _countermeasureController.text;
+    zipcode = int.tryParse(_zipCodeController.text);
+    addressDetail = _addressController.text;
+
     setState(() {
       showErrorConstructionField = selectedConstructionField == null;
       showErrorConstructionType = selectedConstructionType == null;
@@ -252,7 +304,7 @@ class AccidentPageState extends State<AccidentPage> {
       Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('必要な項目を入力してください')),
+        SnackBar(content: Text(localizations.fillInRequired)),
       );
     }
   }
@@ -263,8 +315,9 @@ class AccidentPageState extends State<AccidentPage> {
       appBar: AppBar(
         title: Text(
           widget.isEditing && widget.accident != null
-              ? '事故ID: ${widget.accident!.accidentId}' // Display AccidentId if editing
-              : '新規作成', // Display a default title if adding new data
+              ? '${localizations.accidentID}: ${widget.accident!.accidentId}' // Display AccidentId if editing
+              : localizations
+                  .create, // Display a default title if adding new data
         ),
         actions: widget.isEditing
             ? [
@@ -294,7 +347,7 @@ class AccidentPageState extends State<AccidentPage> {
           children: [
             // Dropdowns for construction field, type, and others
             CustomDropdown(
-              label: '工事分野',
+              label: localizations.constructionType,
               value: selectedConstructionField,
               items: constructionFieldItems,
               onChanged: (value) {
@@ -305,7 +358,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorConstructionField) const ValidationErrorText(),
             CustomDropdown(
-              label: '工事の種類',
+              label: localizations.constructionField,
               value: selectedConstructionType,
               items: constructionTypeItems,
               onChanged: (value) {
@@ -316,7 +369,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorConstructionType) const ValidationErrorText(),
             CustomDropdown(
-              label: '工種',
+              label: localizations.workType,
               value: selectedWorkType,
               items: workTypeItems,
               onChanged: (value) {
@@ -327,7 +380,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorWorkType) const ValidationErrorText(),
             CustomDropdown(
-              label: '工法・形式名',
+              label: localizations.constructionMethod,
               value: selectedConstructionMethod,
               items: constructionMethodItems,
               onChanged: (value) {
@@ -338,7 +391,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorConstructionMethod) const ValidationErrorText(),
             CustomDropdown(
-              label: '災害分類',
+              label: localizations.disasterCategory,
               value: selectedDisasterCategory,
               items: disasterCategoryItems,
               onChanged: (value) {
@@ -349,7 +402,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorDisasterCategory) const ValidationErrorText(),
             CustomDropdown(
-              label: '事故分類',
+              label: localizations.accidentCategory,
               value: selectedAccidentCategory,
               items: accidentCategoryItems,
               onChanged: (value) {
@@ -360,7 +413,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (showErrorAccidentCategory) const ValidationErrorText(),
             CustomDropdown(
-              label: '天候',
+              label: localizations.weather,
               value: selectedWeather,
               items: weatherItems,
               onChanged: (value) {
@@ -371,13 +424,13 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             TextFormField(
               controller: _zipCodeController,
-              decoration: const InputDecoration(
-                labelText: '郵便番号',
+              decoration: InputDecoration(
+                labelText: localizations.zipcode,
               ),
               inputFormatters: [LengthLimitingTextInputFormatter(7)],
               keyboardType: TextInputType.number,
               onChanged: (value) {
-                postalCode = int.tryParse(value);
+                zipcode = int.tryParse(value);
                 if (value.length == 7) {
                   handleZipCodeSubmit(value); // 7桁に達したら自動で住所を取得
                 }
@@ -386,7 +439,7 @@ class AccidentPageState extends State<AccidentPage> {
             ),
 
             CustomDropdown(
-              label: '事故発生場所（都道府県）',
+              label: localizations.accidentLocationPref,
               value: accidentLocationPref,
               items: accidentLocationPrefItems,
               onChanged: (value) {
@@ -398,8 +451,8 @@ class AccidentPageState extends State<AccidentPage> {
             if (showErrorAccidentLocationPref) const ValidationErrorText(),
             TextFormField(
               controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: '住所',
+              decoration: InputDecoration(
+                labelText: localizations.address,
               ),
               onChanged: (value) {
                 addressDetail = value;
@@ -413,7 +466,7 @@ class AccidentPageState extends State<AccidentPage> {
                     onTap: () => PickerUtil.showPicker(
                       context: context,
                       items: List<int>.generate(100, (index) => 2024 - index),
-                      title: '事故発生年',
+                      title: localizations.accidentYear,
                       onSelected: (value) {
                         setState(() {
                           accidentYear = value;
@@ -421,7 +474,7 @@ class AccidentPageState extends State<AccidentPage> {
                       },
                     ),
                     child: CustomPicker(
-                      label: '事故発生年',
+                      label: localizations.accidentYear,
                       value: accidentYear,
                     ),
                   ),
@@ -431,7 +484,7 @@ class AccidentPageState extends State<AccidentPage> {
                     onTap: () => PickerUtil.showPicker(
                       context: context,
                       items: List<int>.generate(12, (index) => index + 1),
-                      title: '事故発生月',
+                      title: localizations.accidentMonth,
                       onSelected: (value) {
                         setState(() {
                           accidentMonth = value;
@@ -439,7 +492,7 @@ class AccidentPageState extends State<AccidentPage> {
                       },
                     ),
                     child: CustomPicker(
-                      label: '事故発生月',
+                      label: localizations.accidentMonth,
                       value: accidentMonth,
                     ),
                   ),
@@ -452,7 +505,7 @@ class AccidentPageState extends State<AccidentPage> {
               onTap: () => PickerUtil.showPicker(
                 context: context,
                 items: List<int>.generate(24, (index) => index),
-                title: '事故発生時間',
+                title: localizations.accidentTime,
                 onSelected: (value) {
                   setState(() {
                     accidentTime = value;
@@ -460,17 +513,18 @@ class AccidentPageState extends State<AccidentPage> {
                 },
               ),
               child: CustomPicker(
-                label: '事故発生時間',
+                label: localizations.accidentTime,
                 value: accidentTime,
               ),
             ),
             if (showErrorAccidentTime) const ValidationErrorText(),
 
             TextFormField(
-              decoration: const InputDecoration(
-                labelText: '事故に至る経緯と事故の状況',
+              controller: _backgroundController,
+              decoration: InputDecoration(
+                labelText: localizations.accidentBackground,
               ),
-              initialValue: accidentBackground,
+              // initialValue: accidentBackground,
               keyboardType: TextInputType.multiline,
               maxLines: null, // 複数行対応
               onChanged: (value) {
@@ -480,10 +534,11 @@ class AccidentPageState extends State<AccidentPage> {
 
             // 事故の要因（背景も含む）入力フィールド
             TextFormField(
-              decoration: const InputDecoration(
-                labelText: '事故の要因（背景も含む）',
+              controller: _causeController,
+              decoration: InputDecoration(
+                labelText: localizations.accidentCause,
               ),
-              initialValue: accidentCause,
+              // initialValue: accidentCause,
               keyboardType: TextInputType.multiline,
               maxLines: null,
               onChanged: (value) {
@@ -493,9 +548,10 @@ class AccidentPageState extends State<AccidentPage> {
 
             // 事故発生後の対策入力フィールド
             TextFormField(
-              initialValue: accidentCountermeasure,
-              decoration: const InputDecoration(
-                labelText: '事故発生後の対策',
+              controller: _countermeasureController,
+              // initialValue: accidentCountermeasure,
+              decoration: InputDecoration(
+                labelText: localizations.accidentCountermeasure,
               ),
               keyboardType: TextInputType.multiline,
               maxLines: null, // 複数行対応

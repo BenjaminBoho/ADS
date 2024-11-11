@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:weather_icons/weather_icons.dart';
 
 IconData? getWeatherIcon(String? weatherCondition) {
+  if (kDebugMode) {
+    print("Weather condition received: $weatherCondition");
+  }
   switch (weatherCondition) {
     case 'Sunny':
       return WeatherIcons.day_sunny;

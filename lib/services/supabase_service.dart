@@ -1,10 +1,9 @@
-import 'package:accident_data_storage/models/accident_data.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/utils/language_utils.dart';
 import 'package:accident_data_storage/services/query_helpers.dart';
-import 'package:accident_data_storage/models/accident_display.dart';
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
@@ -47,6 +46,7 @@ class SupabaseService {
   }
 
   Future<List<Map<String, dynamic>>> fetchAccidentsData({
+    required BuildContext context,
     Map<String, dynamic>? filters,
     String? sortBy,
     bool isAscending = true,
@@ -93,23 +93,23 @@ class SupabaseService {
     }
   }
 
-  Future<List<AccidentDisplayModel>> mapAccidentsToDisplayModel(
-    List<Map<String, dynamic>> accidentsData,
-    List<Item> itemList,
-  ) async {
-    return await Future.wait(
-      accidentsData.map((accidentMap) async {
-        final accidentDataModel = AccidentDataModel.fromMap(accidentMap);
-        return AccidentDisplayModel.fromDataModel(
-          accidentDataModel,
-          (itemValue, itemGenre) =>
-              _fetchItemName(itemList, itemValue, itemGenre),
-        );
-      }).toList(),
-    );
-  }
+  // Future<List<Accident>> mapAccidentsToDisplayModel(
+  //   List<Map<String, dynamic>> accidentsData,
+  //   List<Item> itemList,
+  // ) async {
+  //   return await Future.wait(
+  //     Accident.fromMap((accidentMap) async {
+  //       final accidentDataModel = Accident.fromMap(accidentMap);
+  //       return Accident.(
+  //         accidentDataModel,
+  //         (itemValue, itemGenre) =>
+  //             _fetchItemName(itemList, itemValue, itemGenre),
+  //       );
+  //     }).toList(),
+  //   );
+  // }
 
-  Future<String> _fetchItemName(
+  Future<String> fetchItemName(
       List<Item> itemList, String itemValue, String itemGenre) async {
     // Find the matching item name for a given value and genre
     final item = itemList.firstWhere(

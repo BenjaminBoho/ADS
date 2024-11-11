@@ -4,7 +4,7 @@ import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
-import 'package:accident_data_storage/utils/language_utils.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class FilterBottomSheet extends StatefulWidget {
   final Function(Map<String, dynamic> filters) onApplyFilters;
@@ -17,6 +17,7 @@ class FilterBottomSheet extends StatefulWidget {
 
 class FilterBottomSheetState extends State<FilterBottomSheet> {
   final SupabaseService _supabaseService = SupabaseService();
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   // State variables for filters
   String? selectedConstructionField;
@@ -54,6 +55,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+
     return SingleChildScrollView(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -64,12 +66,12 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('フィルター',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(localizations.filter,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16.0),
           // Construction Field Dropdown
           CustomDropdown(
-            label: '工事分野',
+            label: localizations.constructionField,
             value: selectedConstructionField,
             items: constructionFieldItems,
             onChanged: (value) {
@@ -81,7 +83,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
           const SizedBox(height: 16.0),
           // Construction Type Dropdown
           CustomDropdown(
-            label: '工事の種類',
+            label: localizations.constructionType,
             value: selectedConstructionType,
             items: constructionTypeItems,
             onChanged: (value) {
@@ -99,7 +101,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                   onTap: () => PickerUtil.showPicker(
                     context: context,
                     items: years,
-                    title: '開始年',
+                    title: localizations.startYear,
                     onSelected: (value) {
                       setState(() {
                         fromYear = value;
@@ -107,7 +109,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '開始年',
+                    label: localizations.startYear,
                     value: fromYear,
                   ),
                 ),
@@ -117,7 +119,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                   onTap: () => PickerUtil.showPicker(
                     context: context,
                     items: List<int>.generate(12, (index) => index + 1),
-                    title: '開始月',
+                    title: localizations.startMonth,
                     onSelected: (value) {
                       setState(() {
                         fromMonth = value;
@@ -125,7 +127,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '開始月',
+                    label: localizations.startMonth,
                     value: fromMonth,
                   ),
                 ),
@@ -141,7 +143,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                   onTap: () => PickerUtil.showPicker(
                     context: context,
                     items: years,
-                    title: '終了年',
+                    title: localizations.endYear,
                     onSelected: (value) {
                       setState(() {
                         toYear = value;
@@ -149,7 +151,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '終了年',
+                    label: localizations.endYear,
                     value: toYear,
                   ),
                 ),
@@ -159,7 +161,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                   onTap: () => PickerUtil.showPicker(
                     context: context,
                     items: List<int>.generate(12, (index) => index + 1),
-                    title: '終了月',
+                    title: localizations.endMonth,
                     onSelected: (value) {
                       setState(() {
                         toMonth = value;
@@ -167,7 +169,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '終了月',
+                    label: localizations.endMonth,
                     value: toMonth,
                   ),
                 ),
@@ -184,7 +186,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     context: context,
                     items: List<int>.generate(
                         24, (index) => index), // Hours from 0 to 23
-                    title: '開始時間',
+                    title: localizations.startTime,
                     onSelected: (value) {
                       setState(() {
                         fromHour = value;
@@ -192,7 +194,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '開始時間',
+                    label: localizations.startTime,
                     value: fromHour,
                   ),
                 ),
@@ -204,7 +206,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     context: context,
                     items: List<int>.generate(
                         24, (index) => index), // Hours from 0 to 23
-                    title: '終了時間',
+                    title: localizations.endTime,
                     onSelected: (value) {
                       setState(() {
                         toHour = value;
@@ -212,7 +214,7 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
                     },
                   ),
                   child: CustomPicker(
-                    label: '終了時間',
+                    label: localizations.endTime,
                     value: toHour,
                   ),
                 ),
@@ -223,14 +225,14 @@ class FilterBottomSheetState extends State<FilterBottomSheet> {
           const SizedBox(height: 16.0),
           // Accident Background TextField
           TextFormField(
-            decoration: const InputDecoration(labelText: '事故に至る経緯と事故の状況'),
+            decoration: InputDecoration(labelText: localizations.accidentBackground),
             onChanged: (value) {
               accidentBackground = value;
             },
           ),
           const SizedBox(height: 16.0),
           ElevatedButton(
-            child: const Text('フィルターを適用'),
+            child: Text(localizations.applyFilter),
             onPressed: () {
               Map<String, dynamic> filters = {
                 'constructionField': selectedConstructionField,

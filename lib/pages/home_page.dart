@@ -1,12 +1,12 @@
-import 'package:accident_data_storage/models/accident_display.dart';
 import 'package:accident_data_storage/pages/accident_page.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:accident_data_storage/widgets/sort_button_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
-import 'package:accident_data_storage/models/accident_data.dart';
+import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/widgets/filter_bottom_sheet.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,7 +17,8 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService();
-  late Future<List<AccidentDisplayModel>> _accidentData;
+  late Future<List<Accident>> _accidentData;
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   Map<String, dynamic>? _currentFilters;
   String? _currentSortBy = 'ID';
@@ -36,7 +37,7 @@ class HomePageState extends State<HomePage> {
           .fetchAccidentsData(
         filters: _currentFilters,
         sortBy: _currentSortBy,
-        isAscending: isAscending,
+        isAscending: isAscending, context: context,
       )
           .then((data) async {
         // Fetch localized items for mapping
@@ -51,11 +52,30 @@ class HomePageState extends State<HomePage> {
         ];
         final items = await Future.wait(
             genres.map((genre) => _supabaseService.fetchItems(genre)));
-        final itemList =
-            items.expand((item) => item).toList(); // Flatten the list
+        final itemList = items.expand((item) => item).toList();
 
-        return await _supabaseService.mapAccidentsToDisplayModel(
-            data, itemList);
+        return await Future.wait(data.map((accidentMap) async {
+          return Accident(
+            accidentId: accidentMap['AccidentId'] as int,
+            constructionField: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionField'], 'ConstructionField'),
+            constructionType: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionType'], 'ConstructionType'),
+            workType: await _supabaseService.fetchItemName(itemList, accidentMap['WorkType'], 'WorkType'),
+            constructionMethod: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionMethod'], 'ConstructionMethod'),
+            disasterCategory: await _supabaseService.fetchItemName(itemList, accidentMap['DisasterCategory'], 'DisasterCategory'),
+            accidentCategory: await _supabaseService.fetchItemName(itemList, accidentMap['AccidentCategory'], 'AccidentCategory'),
+            weather: accidentMap['Weather'] as String?,
+            weatherCondition: accidentMap['Weather'] as String?,
+            accidentYear: accidentMap['AccidentYear'] as int,
+            accidentMonth: accidentMap['AccidentMonth'] as int,
+            accidentTime: accidentMap['AccidentTime'] as int,
+            accidentLocationPref: await _supabaseService.fetchItemName(itemList, accidentMap['AccidentLocationPref'], 'AccidentLocationPref'),
+            accidentBackground: accidentMap['AccidentBackground'] as String?,
+            accidentCause: accidentMap['AccidentCause'] as String?,
+            accidentCountermeasure: accidentMap['AccidentCountermeasure'] as String?,
+            zipcode: accidentMap['Zipcode'] as int?,
+            addressDetail: accidentMap['AddressDetail'] as String?
+          );
+        }).toList());
       });
     });
   }
@@ -75,35 +95,12 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToAccidentPage(
-      {AccidentDisplayModel? accident, required bool isEditing}) async {
-    // Convert AccidentDisplayModel to AccidentDataModel if in editing mode
-    AccidentDataModel? accidentData = isEditing && accident != null
-        ? AccidentDataModel(
-            accidentId: accident.accidentId,
-            constructionField: accident.constructionField,
-            constructionType: accident.constructionType,
-            workType: accident.workType,
-            constructionMethod: accident.constructionMethod,
-            disasterCategory: accident.disasterCategory,
-            accidentCategory: accident.accidentCategory,
-            weather: accident.weather,
-            accidentYear: accident.accidentYear,
-            accidentMonth: accident.accidentMonth,
-            accidentTime: accident.accidentTime,
-            accidentLocationPref: accident.accidentLocationPref,
-            accidentBackground: accident.accidentBackground,
-            accidentCause: accident.accidentCause,
-            accidentCountermeasure: accident.accidentCountermeasure,
-            postalCode: accident.postalCode,
-            addressDetail: accident.addressDetail,
-          )
-        : null;
-
+      {Accident? accident, required bool isEditing}) async {
     bool? result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AccidentPage(
-          accident: accidentData,
+          accident: accident,
           isEditing: isEditing,
         ),
       ),
@@ -177,63 +174,63 @@ class HomePageState extends State<HomePage> {
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '工事分野',
-                  sortBy: '工事分野',
+                  label: localizations.constructionField,
+                  sortBy: 'ConstructionField',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '工事の種類',
+                  label: localizations.constructionType,
                   sortBy: '工事の種類',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '工種',
+                  label: localizations.workType,
                   sortBy: '工種',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '工法・形式名',
+                  label: localizations.constructionMethod,
                   sortBy: '工法・形式名',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '災害分類',
+                  label: localizations.disasterCategory,
                   sortBy: '災害分類',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '事故分類',
+                  label: localizations.accidentCategory,
                   sortBy: '事故分類',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '天候',
+                  label: localizations.weather,
                   sortBy: '天候',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                  label: '事故発生年・月・時間',
+                  label: localizations.accidentYearMonthTime,
                   sortBy: '事故発生年・月・時間',
                   currentSortBy: _currentSortBy,
                   isAscending: isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
-                    label: '事故発生場所（都道府県）',
+                    label: localizations.accidentLocationPref,
                     sortBy: '事故発生場所（都道府県）',
                     currentSortBy: _currentSortBy,
                     isAscending: isAscending,
@@ -262,7 +259,7 @@ class HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToAccidentPage(isEditing: false),
         icon: const Icon(Icons.add),
-        label: const Text('新規作成'),
+        label: Text(AppLocalizations.of(context)!.create),
       ),
     );
   }

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ValidationErrorText extends StatelessWidget {
-  final String message;
+  final String? message;
 
-  const ValidationErrorText({super.key, this.message = '*必須項目'});
+  const ValidationErrorText({Key? key, this.message}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final String displayMessage = message ?? AppLocalizations.of(context)!.requiredField;
+    
     return Text(
-      message,
+      displayMessage,
       style: const TextStyle(color: Colors.red),
     );
   }

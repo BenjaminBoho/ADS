@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DeleteConfirmationDialog extends StatelessWidget {
   const DeleteConfirmationDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return AlertDialog(
-      title: const Center(child: Text('削除')),
-      content: const Column(
+      title: Center(child: Text(localizations.delete)),
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Align(
             alignment: Alignment.center,
-            child: Text('削除しますか'),
+            child: Text(localizations.confirmDelete),
           ),
         ],
       ),
@@ -22,11 +25,11 @@ class DeleteConfirmationDialog extends StatelessWidget {
           children: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('キャンセル'),
+              child: Text(localizations.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('削除'),
+              child: Text(localizations.delete),
             ),
           ],
         ),

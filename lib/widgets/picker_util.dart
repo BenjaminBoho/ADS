@@ -1,6 +1,7 @@
 import 'package:bottom_picker/resources/arrays.dart';
 import 'package:flutter/material.dart';
 import 'package:bottom_picker/bottom_picker.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class PickerUtil {
   static void showPicker({
@@ -21,14 +22,14 @@ class PickerUtil {
         onSelected(items[index]);
       },
       bottomPickerTheme: BottomPickerTheme.blue,
-      buttonContent: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10),
+      buttonContent: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '選択',
-              style: TextStyle(
+                  AppLocalizations.of(context)!.select,
+              style: const TextStyle(
                 color: Colors.white,
               ),
             ),

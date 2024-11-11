@@ -16,7 +16,6 @@ class CustomDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Create a temporary list that includes the current value if it's missing
     List<Item> dropdownItems = List.from(items);
 
     return DropdownButtonFormField<String>(

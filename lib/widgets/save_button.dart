@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SaveButton extends StatelessWidget {
   final bool isEditing;
@@ -8,12 +9,13 @@ class SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return SizedBox(
       width: 100, // Set the desired width
       height: 40, // Set the desired height
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(isEditing ? '更新' : '保存'),
+        child: Text(isEditing ? localizations.update : localizations.save),
       ),
     );
   }

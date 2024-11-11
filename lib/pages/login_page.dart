@@ -13,6 +13,7 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final SupabaseService _supabaseService = SupabaseService();
+  AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   void _login() async {
     String email = _emailController.text;
@@ -25,14 +26,14 @@ class LoginPageState extends State<LoginPage> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('ログイン失敗しました'),
-          content: const Text('無効な電子メールまたはパスワードです'),
+          title: Text(localizations.loginFail),
+          content: Text(localizations.loginFailmsg),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('OK'),
+              child: Text(localizations.ok),
             ),
           ],
         ),
@@ -44,7 +45,7 @@ class LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('事故データ管理システム'),
+        title: Text(localizations.accidentDataStorage),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -53,24 +54,24 @@ class LoginPageState extends State<LoginPage> {
           children: [
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'メールアドレス',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: localizations.mailAddress,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'パスワード',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: localizations.password,
+                border: const OutlineInputBorder(),
               ),
               obscureText: true,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _login,
-              child: Text(AppLocalizations.of(context)!.login),
+              child: Text(localizations.login),
             ),
           ],
         ),

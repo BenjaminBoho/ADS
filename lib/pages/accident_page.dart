@@ -186,7 +186,7 @@ class AccidentPageState extends State<AccidentPage> {
         // APIで取得した都道府県をドロップダウンで選択状態にする
         accidentLocationPref = accidentLocationPrefItems
             .firstWhere((item) => item.itemName == address.address1)
-            .itemName;
+            .itemValue;
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

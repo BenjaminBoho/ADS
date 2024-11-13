@@ -35,7 +35,9 @@ class LogoutButton extends StatelessWidget {
           // Call the logout function
           await supabaseService.logout();
           // Navigate back to the login page
-          Navigator.pushReplacementNamed(context, '/');
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/');
+          }
         }
       },
       tooltip: 'Logout',

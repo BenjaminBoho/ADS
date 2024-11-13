@@ -18,7 +18,6 @@
     "accidentCause": "事故の要因（背景も含む）",
     "accidentCountermeasure": "事故発生後の対策",
     "zipcode": "郵便番号",
-    "addressDetail": "住所詳細",
     "accidentTime": "事故発生時間",
     "accidentYear": "事故発生年",
     "accidentMonth": "事故発生月",

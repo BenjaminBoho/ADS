@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 class ValidationErrorText extends StatelessWidget {
   final String? message;
 
-  const ValidationErrorText({Key? key, this.message}) : super(key: key);
+  const ValidationErrorText({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {

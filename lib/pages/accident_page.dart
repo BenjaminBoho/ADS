@@ -6,7 +6,6 @@ import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:accident_data_storage/widgets/save_button.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
@@ -29,7 +28,6 @@ class AccidentPage extends StatefulWidget {
 
 class AccidentPageState extends State<AccidentPage> {
   final SupabaseService _supabaseService = SupabaseService();
-  AppLocalizations get localizations => AppLocalizations.of(context)!;
   final TextEditingController _zipCodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
@@ -125,19 +123,21 @@ class AccidentPageState extends State<AccidentPage> {
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
     final address = await fetchAddressFromZipCode(zipCode);
+
     if (address != null) {
       setState(() {
-        _addressController.text =
-            '${address.address2} ${address.address3}';
+        _addressController.text = '${address.address2} ${address.address3}';
 
         accidentLocationPref = accidentLocationPrefItems
             .firstWhere((item) => item.itemName == address.address1)
             .itemValue;
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
+        );
+      }
     }
   }
 
@@ -190,8 +190,9 @@ class AccidentPageState extends State<AccidentPage> {
       };
       await _supabaseService.addAccident(newAccidentData);
     }
-
-    Navigator.pop(context, true);
+    if (mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   // Method to submit the form and add new accident data
@@ -241,16 +242,19 @@ class AccidentPageState extends State<AccidentPage> {
         'AccidentCountermeasure': accidentCountermeasure,
       };
       await _supabaseService.addAccident(newAccidentData);
-      Navigator.pop(context, true);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.fillInRequired)),
+        SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -273,8 +277,9 @@ class AccidentPageState extends State<AccidentPage> {
                     if (confirmDelete == true) {
                       await _supabaseService
                           .deleteAccident(widget.accident!.accidentId);
-                      Navigator.pop(
-                          context, true); // Return to the previous screen
+                      if (context.mounted) {
+                        Navigator.pop(context, true);
+                      } // Return to the previous screen
                     }
                   },
                 ),

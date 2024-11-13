@@ -20,7 +20,6 @@ class HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService();
   late Future<List<Accident>> _accidentData;
   late Future<List<Item>> _itemList;
-  AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   Map<String, dynamic>? _currentFilters;
   String? _currentSortBy = 'ID';
@@ -92,6 +91,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         leading: LogoutButton(supabaseService: _supabaseService),

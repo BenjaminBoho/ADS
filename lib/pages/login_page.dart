@@ -13,27 +13,27 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final SupabaseService _supabaseService = SupabaseService();
-  AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   void _login() async {
     String email = _emailController.text;
     String password = _passwordController.text;
 
     bool success = await _supabaseService.login(email, password);
+    if (!mounted) return;
     if (success) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(localizations.loginFail),
-          content: Text(localizations.loginFailmsg),
+          title: Text(AppLocalizations.of(context)!.loginFail),
+          content: Text(AppLocalizations.of(context)!.loginFailmsg),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text(localizations.ok),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -43,6 +43,7 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.accidentDataStorage),

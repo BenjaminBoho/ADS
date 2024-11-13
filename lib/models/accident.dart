@@ -69,7 +69,7 @@ class Accident {
     if (getDeviceLanguage() == "ja") {
       return '$accidentYear年$formattedMonth月 $formattedHour時';
     } else {
-      return '$accidentYear/$formattedMonth $formattedHour:00';
+      return '$formattedMonth/$accidentYear $formattedHour:00';
     }
   }
 }

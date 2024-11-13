@@ -47,7 +47,6 @@ class SupabaseService {
   }
 
   Future<List<Accident>> fetchAccidentsData({
-    required BuildContext context,
     Map<String, dynamic>? filters,
     String? sortBy = 'ID',
     bool isAscending = false,

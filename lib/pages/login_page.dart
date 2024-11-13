@@ -1,6 +1,7 @@
+import 'package:accident_data_storage/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,14 +13,14 @@ class LoginPage extends StatefulWidget {
 class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final SupabaseService _supabaseService = SupabaseService();
 
-  void _login() async {
+  void _login(AuthProvider authProvider) async {
     String email = _emailController.text;
     String password = _passwordController.text;
 
-    bool success = await _supabaseService.login(email, password);
+    bool success = await authProvider.login(email, password);
     if (!mounted) return;
+
     if (success) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
@@ -43,6 +44,7 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -71,7 +73,7 @@ class LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _login,
+              onPressed: () => _login(authProvider),
               child: Text(localizations.login),
             ),
           ],

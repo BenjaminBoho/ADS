@@ -1,5 +1,6 @@
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/pages/accident_page.dart';
+import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:accident_data_storage/widgets/sort_button_widget.dart';
@@ -8,6 +9,7 @@ import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,65 +19,29 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  final SupabaseService _supabaseService = SupabaseService();
   late Future<List<Accident>> _accidentData;
   late Future<List<Item>> _itemList;
-
-  Map<String, dynamic>? _currentFilters;
-  String? _currentSortBy = 'ID';
-  bool isAscending = false;
 
   @override
   void initState() {
     super.initState();
-    _currentFilters = {};
-    _fetchAccidentData();
-    _fetchAllItems();
-  }
-
-  void _fetchAllItems() {
-    final futures = [
-      _supabaseService.fetchItems('ConstructionField'),
-      _supabaseService.fetchItems('ConstructionType'),
-      _supabaseService.fetchItems('WorkType'),
-      _supabaseService.fetchItems('ConstructionMethod'),
-      _supabaseService.fetchItems('DisasterCategory'),
-      _supabaseService.fetchItems('AccidentCategory'),
-      _supabaseService.fetchItems('AccidentLocationPref'),
-    ];
-
-    _itemList = Future.wait(futures)
-        .then((lists) => lists.expand((list) => list).toList());
-  }
-
-  void _fetchAccidentData() {
-    setState(() {
-      _accidentData = _supabaseService.fetchAccidentsData(
-        filters: _currentFilters,
-        sortBy: _currentSortBy,
-        isAscending: isAscending,
-        context: context,
-      );
-    });
+    final accidentProvider =
+        Provider.of<AccidentProvider>(context, listen: false);
+    _accidentData = accidentProvider.fetchAccidentData();
+    _itemList = accidentProvider.fetchAllItems();
   }
 
   void onSortItemPressed(String sortBy) {
+    final accidentProvider =
+        Provider.of<AccidentProvider>(context, listen: false);
+    accidentProvider.updateSorting(sortBy);
     setState(() {
-      if (_currentSortBy == sortBy) {
-        // Toggle ascending/descending if the same sort item is pressed
-        isAscending = !isAscending;
-      } else {
-        // If a new item is pressed, reset to descending
-        _currentSortBy = sortBy;
-        isAscending = false;
-      }
-      _fetchAccidentData();
+      _accidentData = accidentProvider.fetchAccidentData();
     });
   }
 
-  Future<void> _navigateToAccidentPage(
-      {Accident? accident, required bool isEditing}) async {
-    bool? result = await Navigator.push(
+    Future<void> _navigateToAccidentPage({Accident? accident, required bool isEditing}) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AccidentPage(
@@ -86,8 +52,31 @@ class HomePageState extends State<HomePage> {
     );
 
     if (result == true) {
-      _fetchAccidentData();
+      // Triggers a data refresh in AccidentProvider when the user returns
+      setState(() {
+        _accidentData = context.read<AccidentProvider>().fetchAccidentData();
+      });
     }
+  }
+
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return FilterBottomSheet(
+          onApplyFilters: (filters) {
+            final accidentProvider =
+                Provider.of<AccidentProvider>(context, listen: false);
+            accidentProvider.updateFilters(filters);
+            setState(() {
+              _accidentData = accidentProvider.fetchAccidentData();
+            });
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -95,7 +84,7 @@ class HomePageState extends State<HomePage> {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        leading: LogoutButton(supabaseService: _supabaseService),
+        leading: LogoutButton(supabaseService: SupabaseService()),
         // leading: PopupMenuButton<String>(
         //   icon: const Icon(Icons.menu),
         //   onSelected: (String result) async {
@@ -119,23 +108,7 @@ class HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // Show the filter bottom sheet
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) {
-                  return FilterBottomSheet(
-                    onApplyFilters: (filters) {
-                      setState(() {
-                        _currentFilters = filters;
-                        _fetchAccidentData();
-                      });
-                    },
-                  );
-                },
-              );
-            },
+            onPressed: _showFilterBottomSheet,
           ),
         ],
       ),
@@ -149,71 +122,81 @@ class HomePageState extends State<HomePage> {
                 SortButton(
                   label: 'ID',
                   sortBy: 'ID',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.constructionField,
                   sortBy: 'ConstructionField',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.constructionType,
                   sortBy: '工事の種類',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.workType,
                   sortBy: '工種',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.constructionMethod,
                   sortBy: '工法・形式名',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.disasterCategory,
                   sortBy: '災害分類',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.accidentCategory,
                   sortBy: '事故分類',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.weather,
                   sortBy: '天候',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                   label: localizations.accidentYearMonthTime,
                   sortBy: '事故発生年・月・時間',
-                  currentSortBy: _currentSortBy,
-                  isAscending: isAscending,
+                  currentSortBy:
+                      context.watch<AccidentProvider>().currentSortBy,
+                  isAscending: context.watch<AccidentProvider>().isAscending,
                   onSortItemPressed: onSortItemPressed,
                 ),
                 SortButton(
                     label: localizations.accidentLocationPref,
                     sortBy: '事故発生場所（都道府県）',
-                    currentSortBy: _currentSortBy,
-                    isAscending: isAscending,
+                    currentSortBy:
+                        context.watch<AccidentProvider>().currentSortBy,
+                    isAscending: context.watch<AccidentProvider>().isAscending,
                     onSortItemPressed: onSortItemPressed)
               ],
             ),
@@ -223,7 +206,10 @@ class HomePageState extends State<HomePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                _fetchAccidentData(); // Refresh data
+                setState(() {
+                  _accidentData =
+                      context.read<AccidentProvider>().fetchAccidentData();
+                });
               },
               child: FutureBuilder<List<Item>>(
                 future: _itemList, // Use the future _itemList we initialized
@@ -237,12 +223,10 @@ class HomePageState extends State<HomePage> {
                   }
 
                   final itemList = snapshot.data!;
-
                   return AccidentListWidget(
                     accidentData: _accidentData,
-                    itemList: itemList, // Pass itemList here
-                    fetchItemName: _supabaseService
-                        .fetchItemName, // Pass fetchItemName function
+                    itemList: itemList,
+                    fetchItemName: SupabaseService().fetchItemName,
                     onAccidentTap: (accident) => _navigateToAccidentPage(
                       accident: accident,
                       isEditing: true,

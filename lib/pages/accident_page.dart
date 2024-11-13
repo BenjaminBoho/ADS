@@ -4,7 +4,6 @@ import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
-import 'package:accident_data_storage/widgets/save_button.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
@@ -507,12 +506,20 @@ class AccidentPageState extends State<AccidentPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                SaveButton(
-                  isEditing: widget.isEditing,
-                  onPressed: widget.isEditing ? saveAccident : addAccident,
+                SizedBox(
+                  width: 100,
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: widget.isEditing ? saveAccident : addAccident,
+                    child: Text(
+                      widget.isEditing
+                          ? AppLocalizations.of(context)!.update
+                          : AppLocalizations.of(context)!.save,
+                    ),
+                  ),
                 ),
               ],
-            ),
+            )
           ],
         ),
       ),

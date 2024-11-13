@@ -11,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:accident_data_storage/services/supabase_service.dart';
 
 void main() async {
   // Initialize Supabase before running any tests

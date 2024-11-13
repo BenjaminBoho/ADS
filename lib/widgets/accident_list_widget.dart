@@ -2,6 +2,7 @@ import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/widgets/accident_card.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AccidentListWidget extends StatelessWidget {
   final Future<List<Accident>> accidentData;
@@ -27,7 +28,7 @@ class AccidentListWidget extends StatelessWidget {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No data found'));
+          return Center(child: Text(AppLocalizations.of(context)!.noDataFound));
         }
 
         final accidents = snapshot.data!;

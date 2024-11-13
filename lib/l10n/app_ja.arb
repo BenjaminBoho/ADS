@@ -43,5 +43,6 @@
     "loginFailmsg": "無効な電子メールまたはパスワードです",
     "ok": "OK",
     "filter": "フィルター",
-    "applyFilter": "フィルターを適用"
+    "applyFilter": "フィルターを適用",
+    "noDataFound": "データが見つかりません"
 }

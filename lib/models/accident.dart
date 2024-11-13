@@ -65,12 +65,16 @@ class Accident {
   String get formattedAccidentDateTime {
     String formattedMonth = accidentMonth.toString().padLeft(2, '0');
     String formattedHour = accidentTime.toString().padLeft(2, '0');
+    return formatDate(accidentYear, formattedMonth, formattedHour);
+  }
 
-    if (getDeviceLanguage() == "ja") {
-      return '$accidentYear年$formattedMonth月 $formattedHour時';
-    } else {
-      return '$formattedMonth/$accidentYear $formattedHour:00';
-    }
+  @override
+  String toString() {
+    return 'Accident(accidentId: $accidentId, constructionField: $constructionField, constructionType: $constructionType, workType: $workType, '
+           'constructionMethod: $constructionMethod, disasterCategory: $disasterCategory, accidentCategory: $accidentCategory, '
+           'weather: $weather, accidentYear: $accidentYear, accidentMonth: $accidentMonth, accidentTime: $accidentTime, '
+           'accidentLocationPref: $accidentLocationPref, accidentBackground: $accidentBackground, accidentCause: $accidentCause, '
+           'accidentCountermeasure: $accidentCountermeasure, zipcode: $zipcode, addressDetail: $addressDetail)';
   }
 }
 

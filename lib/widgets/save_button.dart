@@ -11,8 +11,8 @@ class SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return SizedBox(
-      width: 100, // Set the desired width
-      height: 40, // Set the desired height
+      width: 100,
+      height: 40,
       child: ElevatedButton(
         onPressed: onPressed,
         child: Text(isEditing ? localizations.update : localizations.save),

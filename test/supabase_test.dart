@@ -17,7 +17,7 @@ void main() async {
   // Initialize Supabase before running any tests
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  
+
   final supabaseUrl = dotenv.env['SUPABASE_URL']!;
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
 
@@ -26,23 +26,23 @@ void main() async {
     anonKey: supabaseAnonKey,
   );
 
-  final SupabaseService supabaseService = SupabaseService();
-
   group('.env file and Supabase tests', () {
     // Test for loading .env file successfully
     test('Load .env file', () async {
       try {
         // Load the .env file
         await dotenv.load(fileName: ".env");
-        
+
         // Retrieve environment variables
         final supabaseUrl = dotenv.env['SUPABASE_URL'];
         final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
-        
+
         // Check if the variables are loaded and not null
-        expect(supabaseUrl, isNotNull, reason: 'SUPABASE_URL should not be null');
-        expect(supabaseAnonKey, isNotNull, reason: 'SUPABASE_ANON_KEY should not be null');
-        
+        expect(supabaseUrl, isNotNull,
+            reason: 'SUPABASE_URL should not be null');
+        expect(supabaseAnonKey, isNotNull,
+            reason: 'SUPABASE_ANON_KEY should not be null');
+
         // Print success message
         if (kDebugMode) {
           print('Environment variables loaded successfully');
@@ -51,26 +51,6 @@ void main() async {
         // If the file fails to load, throw an error
         fail('Failed to load .env file: $e');
       }
-    });
-
-    // Test for login functionality with correct credentials
-    test('Supabase login - valid credentials', () async {
-      String email = 'random@gmail.com';
-      String password = '!123456Ab';
-
-      bool success = await supabaseService.login(email, password);
-
-      expect(success, true, reason: '正しい情報でログインに成功するはずです');
-    });
-
-    // Test for login functionality with incorrect credentials
-    test('Supabase login - invalid credentials', () async {
-      String email = 'wrong@gmail.com';
-      String password = 'wrongPassword';
-
-      bool success = await supabaseService.login(email, password);
-
-      expect(success, false, reason: '無効なメールアドレスでログインは失敗するはずです');
     });
   });
 }

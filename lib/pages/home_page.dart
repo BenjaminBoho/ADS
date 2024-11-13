@@ -41,6 +41,7 @@ class HomePageState extends State<HomePage> {
       _supabaseService.fetchItems('ConstructionMethod'),
       _supabaseService.fetchItems('DisasterCategory'),
       _supabaseService.fetchItems('AccidentCategory'),
+      _supabaseService.fetchItems('AccidentLocationPref'),
     ];
 
     _itemList = Future.wait(futures)

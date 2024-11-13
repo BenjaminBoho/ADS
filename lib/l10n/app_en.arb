@@ -43,5 +43,6 @@
     "loginFailmsg": "Invalid email or password.",
     "ok": "OK",
     "filter": "Filter",
-    "applyFilter": "Apply Filter"
+    "applyFilter": "Apply Filter",
+    "noDataFound": "No data found"
 }

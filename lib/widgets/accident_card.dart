@@ -25,157 +25,180 @@ class AccidentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'ID: ${accident.accidentId}',
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Icon(
-                        weatherIcon,
-                        size: 20,
+          padding: const EdgeInsets.all(14.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'ID: ${accident.accidentId}',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Icon(
+                          weatherIcon,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10.0),
+                        FutureBuilder<String>(
+                          future: fetchItemName(
+                              itemList,
+                              accident.accidentLocationPref,
+                              'AccidentLocationPref'),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const CircularProgressIndicator();
+                            }
+                            return Text(
+                              snapshot.data ?? accident.accidentLocationPref,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8.0),
+                        Text(
+                          ' ${accident.formattedAccidentDateTime}',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10.0),
+                // Construction Field and Type
+                Row(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(itemList,
+                            accident.constructionField, 'ConstructionField'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator(); // or Placeholder text
+                          }
+                          return Text(
+                            snapshot.data ?? accident.constructionField,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
-                      const SizedBox(width: 10.0),
-                      Text(
-                        accident.accidentLocationPref,
-                        style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(itemList,
+                            accident.constructionType, 'ConstructionType'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          return Text(
+                            snapshot.data ?? accident.constructionType,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
-                      const SizedBox(width: 8.0),
-                      Text(
-                        ' ${accident.formattedAccidentDateTime}',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10.0),
+                // Work Type and Construction Method
+                Row(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(
+                            itemList, accident.workType, 'WorkType'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          return Text(
+                            snapshot.data ?? accident.workType,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10.0),
-              // Construction Field and Type
-              Row(
-                children: [
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.constructionField, 'ConstructionField'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator(); // or Placeholder text
-                        }
-                        return Text(
-                          snapshot.data ?? accident.constructionField,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.constructionType, 'ConstructionType'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        return Text(
-                          snapshot.data ?? accident.constructionType,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(itemList,
+                            accident.constructionMethod, 'ConstructionMethod'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          return Text(
+                            snapshot.data ?? accident.constructionMethod,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10.0),
-              // Work Type and Construction Method
-              Row(
-                children: [
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.workType, 'WorkType'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        return Text(
-                          snapshot.data ?? accident.workType,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                  ],
+                ),
+                const SizedBox(height: 10.0),
+                // Disaster Category and Accident Category
+                Row(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(itemList,
+                            accident.disasterCategory, 'DisasterCategory'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          return Text(
+                            snapshot.data ?? accident.disasterCategory,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.constructionMethod, 'ConstructionMethod'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        return Text(
-                          snapshot.data ?? accident.constructionMethod,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: FutureBuilder<String>(
+                        future: fetchItemName(itemList,
+                            accident.accidentCategory, 'AccidentCategory'),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          return Text(
+                            snapshot.data ?? accident.accidentCategory,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10.0),
-              // Disaster Category and Accident Category
-              Row(
-                children: [
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.disasterCategory, 'DisasterCategory'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        return Text(
-                          snapshot.data ?? accident.disasterCategory,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: FutureBuilder<String>(
-                      future: fetchItemName(itemList, accident.accidentCategory, 'AccidentCategory'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        return Text(
-                          snapshot.data ?? accident.accidentCategory,
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+                  ],
+                ),
+              ],
+            ),
+          )),
     );
   }
 }

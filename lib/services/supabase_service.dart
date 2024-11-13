@@ -100,22 +100,6 @@ class SupabaseService {
     }
   }
 
-  // Future<List<Accident>> mapAccidentsToDisplayModel(
-  //   List<Map<String, dynamic>> accidentsData,
-  //   List<Item> itemList,
-  // ) async {
-  //   return await Future.wait(
-  //     Accident.fromMap((accidentMap) async {
-  //       final accidentDataModel = Accident.fromMap(accidentMap);
-  //       return Accident.(
-  //         accidentDataModel,
-  //         (itemValue, itemGenre) =>
-  //             _fetchItemName(itemList, itemValue, itemGenre),
-  //       );
-  //     }).toList(),
-  //   );
-  // }
-
   Future<String> fetchItemName(
       List<Item> itemList, String itemValue, String itemGenre) async {
     // Find the matching item name for a given value and genre

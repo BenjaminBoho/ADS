@@ -1,15 +1,20 @@
 import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/widgets/accident_card.dart';
 
 class AccidentListWidget extends StatelessWidget {
   final Future<List<Accident>> accidentData;
   final Function(Accident) onAccidentTap;
+  final List<Item> itemList;
+  final Future<String> Function(List<Item>, String, String) fetchItemName;
 
   const AccidentListWidget({
     super.key,
     required this.accidentData,
     required this.onAccidentTap,
+    required this.itemList,
+    required this.fetchItemName,
   });
 
   @override
@@ -32,7 +37,7 @@ class AccidentListWidget extends StatelessWidget {
           itemCount: accidents.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 1,
-            childAspectRatio: 2.5,
+            childAspectRatio: 2.4,
             mainAxisSpacing: 8.0,
             crossAxisSpacing: 8.0,
           ),
@@ -40,7 +45,11 @@ class AccidentListWidget extends StatelessWidget {
             final accident = accidents[index];
             return InkWell(
               onTap: () => onAccidentTap(accident),
-              child: AccidentCard(accident: accident),
+              child: AccidentCard(
+                accident: accident,
+                fetchItemName: fetchItemName,
+                itemList: itemList,
+              ),
             );
           },
         );

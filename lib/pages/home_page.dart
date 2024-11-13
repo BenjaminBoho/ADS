@@ -1,3 +1,4 @@
+import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/pages/accident_page.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   final SupabaseService _supabaseService = SupabaseService();
   late Future<List<Accident>> _accidentData;
+  late Future<List<Item>> _itemList;
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
   Map<String, dynamic>? _currentFilters;
@@ -29,54 +31,31 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _currentFilters = {};
     _fetchAccidentData();
+    _fetchAllItems();
+  }
+
+  void _fetchAllItems() {
+    final futures = [
+      _supabaseService.fetchItems('ConstructionField'),
+      _supabaseService.fetchItems('ConstructionType'),
+      _supabaseService.fetchItems('WorkType'),
+      _supabaseService.fetchItems('ConstructionMethod'),
+      _supabaseService.fetchItems('DisasterCategory'),
+      _supabaseService.fetchItems('AccidentCategory'),
+    ];
+
+    _itemList = Future.wait(futures)
+        .then((lists) => lists.expand((list) => list).toList());
   }
 
   void _fetchAccidentData() {
     setState(() {
-      _accidentData = _supabaseService
-          .fetchAccidentsData(
+      _accidentData = _supabaseService.fetchAccidentsData(
         filters: _currentFilters,
         sortBy: _currentSortBy,
-        isAscending: isAscending, context: context,
-      )
-          .then((data) async {
-        // Fetch localized items for mapping
-        final genres = [
-          'ConstructionField',
-          'ConstructionType',
-          'WorkType',
-          'ConstructionMethod',
-          'DisasterCategory',
-          'AccidentCategory',
-          'AccidentLocationPref'
-        ];
-        final items = await Future.wait(
-            genres.map((genre) => _supabaseService.fetchItems(genre)));
-        final itemList = items.expand((item) => item).toList();
-
-        return await Future.wait(data.map((accidentMap) async {
-          return Accident(
-            accidentId: accidentMap['AccidentId'] as int,
-            constructionField: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionField'], 'ConstructionField'),
-            constructionType: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionType'], 'ConstructionType'),
-            workType: await _supabaseService.fetchItemName(itemList, accidentMap['WorkType'], 'WorkType'),
-            constructionMethod: await _supabaseService.fetchItemName(itemList, accidentMap['ConstructionMethod'], 'ConstructionMethod'),
-            disasterCategory: await _supabaseService.fetchItemName(itemList, accidentMap['DisasterCategory'], 'DisasterCategory'),
-            accidentCategory: await _supabaseService.fetchItemName(itemList, accidentMap['AccidentCategory'], 'AccidentCategory'),
-            weather: accidentMap['Weather'] as String?,
-            weatherCondition: accidentMap['Weather'] as String?,
-            accidentYear: accidentMap['AccidentYear'] as int,
-            accidentMonth: accidentMap['AccidentMonth'] as int,
-            accidentTime: accidentMap['AccidentTime'] as int,
-            accidentLocationPref: await _supabaseService.fetchItemName(itemList, accidentMap['AccidentLocationPref'], 'AccidentLocationPref'),
-            accidentBackground: accidentMap['AccidentBackground'] as String?,
-            accidentCause: accidentMap['AccidentCause'] as String?,
-            accidentCountermeasure: accidentMap['AccidentCountermeasure'] as String?,
-            zipcode: accidentMap['Zipcode'] as int?,
-            addressDetail: accidentMap['AddressDetail'] as String?
-          );
-        }).toList());
-      });
+        isAscending: isAscending,
+        context: context,
+      );
     });
   }
 
@@ -243,14 +222,32 @@ class HomePageState extends State<HomePage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                _fetchAccidentData(); // データを再取得
+                _fetchAccidentData(); // Refresh data
               },
-              child: AccidentListWidget(
-                accidentData: _accidentData,
-                onAccidentTap: (accident) => _navigateToAccidentPage(
-                  accident: accident,
-                  isEditing: true,
-                ),
+              child: FutureBuilder<List<Item>>(
+                future: _itemList, // Use the future _itemList we initialized
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No item data found'));
+                  }
+
+                  final itemList = snapshot.data!;
+
+                  return AccidentListWidget(
+                    accidentData: _accidentData,
+                    itemList: itemList, // Pass itemList here
+                    fetchItemName: _supabaseService
+                        .fetchItemName, // Pass fetchItemName function
+                    onAccidentTap: (accident) => _navigateToAccidentPage(
+                      accident: accident,
+                      isEditing: true,
+                    ),
+                  );
+                },
               ),
             ),
           ),

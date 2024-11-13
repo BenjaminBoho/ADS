@@ -38,7 +38,7 @@ class LogoutButton extends StatelessWidget {
           Navigator.pushReplacementNamed(context, '/');
         }
       },
-      tooltip: 'Logout', // Optional: Adds a tooltip when long-pressed
+      tooltip: 'Logout',
     );
   }
 }

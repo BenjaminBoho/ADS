@@ -33,11 +33,6 @@ class AccidentPageState extends State<AccidentPage> {
   final TextEditingController _zipCodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
-  final TextEditingController _backgroundController = TextEditingController();
-  final TextEditingController _causeController = TextEditingController();
-  final TextEditingController _countermeasureController =
-      TextEditingController();
-
   // Fields for form data
   String? selectedConstructionField;
   String? selectedConstructionType;
@@ -83,77 +78,29 @@ class AccidentPageState extends State<AccidentPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize dropdown selections if editing
-    fetchDropDownItems().then((_) {
-      if (widget.isEditing && widget.accident != null) {
-        setState(() {
-          selectedConstructionField = constructionFieldItems
-              .firstWhere(
-                  (item) => item.itemName == widget.accident!.constructionField)
-              .itemValue;
-          // Debug print for constructionField
-          if (kDebugMode) {
-            print(
-                "Selected Construction Field: ${widget.accident!.constructionField}");
-            print(
-                "Mapped Construction Field Value: $selectedConstructionField");
-          }
-          selectedConstructionType = constructionTypeItems
-              .firstWhere(
-                  (item) => item.itemName == widget.accident!.constructionType)
-              .itemValue;
-          selectedWorkType = workTypeItems
-              .firstWhere((item) => item.itemName == widget.accident!.workType)
-              .itemValue;
-          selectedConstructionMethod = constructionMethodItems
-              .firstWhere((item) =>
-                  item.itemName == widget.accident!.constructionMethod)
-              .itemValue;
-          selectedDisasterCategory = disasterCategoryItems
-              .firstWhere(
-                  (item) => item.itemName == widget.accident!.disasterCategory)
-              .itemValue;
-          selectedAccidentCategory = accidentCategoryItems
-              .firstWhere(
-                  (item) => item.itemName == widget.accident!.accidentCategory)
-              .itemValue;
-          selectedWeather = weatherItems
-              .firstWhere((item) => item.itemValue == widget.accident!.weather)
-              .itemValue;
-          accidentLocationPref = accidentLocationPrefItems
-              .firstWhere((item) => item.itemName == widget.accident!.accidentLocationPref)
-              .itemValue;
+    fetchDropDownItems();
+    if (widget.isEditing && widget.accident != null) {
+      // Pre-fill fields for editing
+      selectedConstructionField = widget.accident!.constructionField;
+      selectedConstructionType = widget.accident!.constructionType;
+      selectedWorkType = widget.accident!.workType;
+      selectedConstructionMethod = widget.accident!.constructionMethod;
+      selectedDisasterCategory = widget.accident!.disasterCategory;
+      selectedAccidentCategory = widget.accident!.accidentCategory;
+      selectedWeather = widget.accident?.weather;
+      accidentLocationPref = widget.accident!.accidentLocationPref;
+      accidentBackground = widget.accident?.accidentBackground;
+      accidentCause = widget.accident?.accidentCause;
+      accidentCountermeasure = widget.accident?.accidentCountermeasure;
+      accidentYear = widget.accident!.accidentYear;
+      accidentMonth = widget.accident!.accidentMonth;
+      accidentTime = widget.accident!.accidentTime;
 
-          accidentYear = widget.accident!.accidentYear;
-          accidentMonth = widget.accident!.accidentMonth;
-          accidentTime = widget.accident!.accidentTime;
-
-          _backgroundController.text =
-              widget.accident!.accidentBackground ?? '';
-          _causeController.text = widget.accident!.accidentCause ?? '';
-          _countermeasureController.text =
-              widget.accident!.accidentCountermeasure ?? '';
-
-          if (kDebugMode) {
-            print("Loaded accident data: "
-                "Background: ${widget.accident!.accidentBackground}, "
-                "Cause: ${widget.accident!.accidentCause}, "
-                "Countermeasure: ${widget.accident!.accidentCountermeasure}, "
-                "Postal Code: ${widget.accident!.zipcode}, "
-                "Address Detail: ${widget.accident!.addressDetail}");
-          }
-
-          zipcode = widget.accident!.zipcode;
-          addressDetail = widget.accident!.addressDetail;
-
-          _zipCodeController.text = zipcode?.toString() ?? '';
-          _addressController.text = addressDetail ?? '';
-        });
-      } else {
-        if (kDebugMode)
-          print("Editing mode is off or widget.accident is null.");
-      }
-    });
+      zipcode = widget.accident!.zipcode;
+      addressDetail = widget.accident!.addressDetail;
+      _zipCodeController.text = zipcode != null ? zipcode.toString() : '';
+      _addressController.text = addressDetail ?? '';
+    }
   }
 
   // Fetch items for dropdown lists
@@ -181,9 +128,8 @@ class AccidentPageState extends State<AccidentPage> {
     if (address != null) {
       setState(() {
         _addressController.text =
-            '${address.address2} ${address.address3}'; // 住所
+            '${address.address2} ${address.address3}';
 
-        // APIで取得した都道府県をドロップダウンで選択状態にする
         accidentLocationPref = accidentLocationPrefItems
             .firstWhere((item) => item.itemName == address.address1)
             .itemValue;
@@ -198,9 +144,6 @@ class AccidentPageState extends State<AccidentPage> {
   Future<void> saveAccident() async {
     if (widget.isEditing && widget.accident != null) {
       // Retrieve the latest values from the controllers
-      accidentBackground = _backgroundController.text;
-      accidentCause = _causeController.text;
-      accidentCountermeasure = _countermeasureController.text;
       zipcode = int.tryParse(_zipCodeController.text);
       addressDetail = _addressController.text;
 
@@ -254,9 +197,6 @@ class AccidentPageState extends State<AccidentPage> {
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
     // Retrieve the latest values from the controllers
-    accidentBackground = _backgroundController.text;
-    accidentCause = _causeController.text;
-    accidentCountermeasure = _countermeasureController.text;
     zipcode = int.tryParse(_zipCodeController.text);
     addressDetail = _addressController.text;
 
@@ -432,10 +372,10 @@ class AccidentPageState extends State<AccidentPage> {
               onChanged: (value) {
                 zipcode = int.tryParse(value);
                 if (value.length == 7) {
-                  handleZipCodeSubmit(value); // 7桁に達したら自動で住所を取得
+                  handleZipCodeSubmit(value);
                 }
               },
-              onFieldSubmitted: handleZipCodeSubmit, // 郵便番号が入力されたら住所を取得
+              onFieldSubmitted: handleZipCodeSubmit,
             ),
 
             CustomDropdown(
@@ -520,11 +460,10 @@ class AccidentPageState extends State<AccidentPage> {
             if (showErrorAccidentTime) const ValidationErrorText(),
 
             TextFormField(
-              controller: _backgroundController,
               decoration: InputDecoration(
                 labelText: localizations.accidentBackground,
               ),
-              // initialValue: accidentBackground,
+              initialValue: accidentBackground,
               keyboardType: TextInputType.multiline,
               maxLines: null, // 複数行対応
               onChanged: (value) {
@@ -534,11 +473,10 @@ class AccidentPageState extends State<AccidentPage> {
 
             // 事故の要因（背景も含む）入力フィールド
             TextFormField(
-              controller: _causeController,
               decoration: InputDecoration(
                 labelText: localizations.accidentCause,
               ),
-              // initialValue: accidentCause,
+              initialValue: accidentCause,
               keyboardType: TextInputType.multiline,
               maxLines: null,
               onChanged: (value) {
@@ -548,8 +486,7 @@ class AccidentPageState extends State<AccidentPage> {
 
             // 事故発生後の対策入力フィールド
             TextFormField(
-              controller: _countermeasureController,
-              // initialValue: accidentCountermeasure,
+              initialValue: accidentCountermeasure,
               decoration: InputDecoration(
                 labelText: localizations.accidentCountermeasure,
               ),

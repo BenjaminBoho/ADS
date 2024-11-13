@@ -1,3 +1,4 @@
+import 'package:accident_data_storage/models/accident.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,11 +46,11 @@ class SupabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchAccidentsData({
+  Future<List<Accident>> fetchAccidentsData({
     required BuildContext context,
     Map<String, dynamic>? filters,
-    String? sortBy,
-    bool isAscending = true,
+    String? sortBy = 'ID',
+    bool isAscending = false,
   }) async {
     try {
       PostgrestFilterBuilder query =
@@ -58,10 +59,16 @@ class SupabaseService {
       PostgrestTransformBuilder sortedQuery =
           applySorting(query, sortBy, isAscending);
 
-      final accidentsData = await sortedQuery;
-      if (accidentsData == null) throw Exception("No accidents data received");
+      final data = await sortedQuery;
+      final accidentsList = (data as List<dynamic>).map((item) {
+        return Accident.fromMap(item as Map<String, dynamic>);
+      }).toList();
 
-      return accidentsData as List<Map<String, dynamic>>;
+      if (kDebugMode) {
+        print('Data received: $accidentsList');
+      }
+
+      return accidentsList;
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('Fetch Accident Data error: $e');

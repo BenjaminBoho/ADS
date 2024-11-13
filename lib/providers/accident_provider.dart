@@ -73,7 +73,8 @@ class AccidentProvider with ChangeNotifier {
   // Update an existing accident
   Future<bool> updateAccident(Accident accident) async {
     try {
-      await _supabaseService.updateAccident(accident.accidentId, accident.toMap());
+      await _supabaseService.updateAccident(
+          accident.accidentId, accident.toMap());
       notifyListeners();
       return true;
     } catch (e) {
@@ -82,7 +83,10 @@ class AccidentProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> handleZipCodeSubmit(String zipCode, TextEditingController addressController, List<Item> accidentLocationPrefItems) async {
+  Future<String?> handleZipCodeSubmit(
+      String zipCode,
+      TextEditingController addressController,
+      List<Item> accidentLocationPrefItems) async {
     final address = await fetchAddressFromZipCode(zipCode);
 
     if (address != null) {
@@ -93,6 +97,17 @@ class AccidentProvider with ChangeNotifier {
       return prefItem.itemValue;
     } else {
       return null;
+    }
+  }
+
+  Future<bool> deleteAccident(int accidentId) async {
+    try {
+      await _supabaseService.deleteAccident(accidentId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("Error deleting accident: $e");
+      return false;
     }
   }
 }

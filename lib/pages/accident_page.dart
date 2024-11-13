@@ -8,8 +8,6 @@ import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
 import 'package:flutter/material.dart';
-import 'package:accident_data_storage/services/supabase_service.dart';
-import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -29,7 +27,6 @@ class AccidentPage extends StatefulWidget {
 }
 
 class AccidentPageState extends State<AccidentPage> {
-  final SupabaseService _supabaseService = SupabaseService();
   final TextEditingController _zipCodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
@@ -67,27 +64,6 @@ class AccidentPageState extends State<AccidentPage> {
     'accidentTime': false,
   };
 
-  // Dropdown items
-  List<Item> constructionFieldItems = [];
-  List<Item> constructionTypeItems = [];
-  List<Item> workTypeItems = [];
-  List<Item> constructionMethodItems = [];
-  List<Item> disasterCategoryItems = [];
-  List<Item> accidentCategoryItems = [];
-  List<Item> weatherItems = [];
-  List<Item> accidentLocationPrefItems = [];
-
-  bool showErrorConstructionField = false;
-  bool showErrorConstructionType = false;
-  bool showErrorWorkType = false;
-  bool showErrorConstructionMethod = false;
-  bool showErrorDisasterCategory = false;
-  bool showErrorAccidentCategory = false;
-  bool showErrorAccidentLocationPref = false;
-  bool showErrorAccidentYear = false;
-  bool showErrorAccidentMonth = false;
-  bool showErrorAccidentTime = false;
-
   void validateFields() {
     setState(() {
       validationErrors['constructionField'] = selectedConstructionField == null;
@@ -117,26 +93,31 @@ class AccidentPageState extends State<AccidentPage> {
     dropdownProvider.fetchAllDropdownItems();
     if (widget.isEditing && widget.accident != null) {
       // Pre-fill fields for editing
-      selectedConstructionField = widget.accident!.constructionField;
-      selectedConstructionType = widget.accident!.constructionType;
-      selectedWorkType = widget.accident!.workType;
-      selectedConstructionMethod = widget.accident!.constructionMethod;
-      selectedDisasterCategory = widget.accident!.disasterCategory;
-      selectedAccidentCategory = widget.accident!.accidentCategory;
-      selectedWeather = widget.accident?.weather;
-      accidentLocationPref = widget.accident!.accidentLocationPref;
-      accidentBackground = widget.accident?.accidentBackground;
-      accidentCause = widget.accident?.accidentCause;
-      accidentCountermeasure = widget.accident?.accidentCountermeasure;
-      accidentYear = widget.accident!.accidentYear;
-      accidentMonth = widget.accident!.accidentMonth;
-      accidentTime = widget.accident!.accidentTime;
-
-      zipcode = widget.accident!.zipcode;
-      addressDetail = widget.accident!.addressDetail;
-      _zipCodeController.text = zipcode != null ? zipcode.toString() : '';
-      _addressController.text = addressDetail ?? '';
+      populateFields(widget.accident!);
     }
+  }
+
+  void populateFields(Accident accident) {
+    selectedConstructionField = accident.constructionField;
+    selectedConstructionType = accident.constructionType;
+    selectedWorkType = accident.workType;
+    selectedConstructionMethod = accident.constructionMethod;
+    selectedDisasterCategory = accident.disasterCategory;
+    selectedAccidentCategory = accident.accidentCategory;
+    selectedWeather = accident.weather;
+    accidentLocationPref = accident.accidentLocationPref;
+    accidentBackground = accident.accidentBackground;
+    accidentCause = accident.accidentCause;
+    accidentCountermeasure = accident.accidentCountermeasure;
+    accidentYear = accident.accidentYear;
+    accidentMonth = accident.accidentMonth;
+    accidentTime = accident.accidentTime;
+    zipcode = accident.zipcode;
+    addressDetail = accident.addressDetail;
+
+    // Initialize text fields for zip code and address
+    _zipCodeController.text = zipcode != null ? zipcode.toString() : '';
+    _addressController.text = addressDetail ?? '';
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
@@ -252,11 +233,15 @@ class AccidentPageState extends State<AccidentPage> {
                     );
                     // If confirmed, delete the accident
                     if (confirmDelete == true) {
-                      await _supabaseService
-                          .deleteAccident(widget.accident!.accidentId);
                       if (context.mounted) {
-                        Navigator.pop(context, true);
-                      } // Return to the previous screen
+                        await Provider.of<AccidentProvider>(context,
+                                listen: false)
+                            .deleteAccident(widget.accident!.accidentId);
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(
+                            context, true); // Return to the previous screen
+                      }
                     }
                   },
                 ),
@@ -269,7 +254,7 @@ class AccidentPageState extends State<AccidentPage> {
           children: [
             // Dropdowns for construction field, type, and others
             CustomDropdown(
-              label: localizations.constructionType,
+              label: localizations.constructionField,
               value: selectedConstructionField,
               items: dropdownProvider.constructionFieldItems,
               onChanged: (value) {
@@ -281,7 +266,7 @@ class AccidentPageState extends State<AccidentPage> {
             if (validationErrors['constructionField']!)
               const ValidationErrorText(),
             CustomDropdown(
-              label: localizations.constructionField,
+              label: localizations.constructionType,
               value: selectedConstructionType,
               items: dropdownProvider.constructionTypeItems,
               onChanged: (value) {
@@ -429,8 +414,6 @@ class AccidentPageState extends State<AccidentPage> {
             ),
             if (validationErrors['accidentYear']! &&
                 validationErrors['accidentMonth']!)
-              const ValidationErrorText(),
-            if (showErrorAccidentYear & showErrorAccidentMonth)
               const ValidationErrorText(),
             InkWell(
               onTap: () => PickerUtil.showPicker(

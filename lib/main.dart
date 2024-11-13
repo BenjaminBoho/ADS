@@ -2,6 +2,7 @@ import 'package:accident_data_storage/app/app_initializer.dart';
 import 'package:accident_data_storage/app/app_material.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/auth_provider.dart';
+import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AccidentProvider()),
+        ChangeNotifierProvider(create: (_) => DropdownProvider()),
       ],
       child: const MyApp(),
     ),

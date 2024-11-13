@@ -1,4 +1,5 @@
 import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/services/address_services.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
@@ -10,6 +11,7 @@ import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class AccidentPage extends StatefulWidget {
   final Accident? accident;
@@ -51,6 +53,19 @@ class AccidentPageState extends State<AccidentPage> {
   String? accidentLocationPref;
   String? addressDetail;
 
+  Map<String, bool> validationErrors = {
+    'constructionField': false,
+    'constructionType': false,
+    'workType': false,
+    'constructionMethod': false,
+    'disasterCategory': false,
+    'accidentCategory': false,
+    'accidentLocationPref': false,
+    'accidentYear': false,
+    'accidentMonth': false,
+    'accidentTime': false,
+  };
+
   // Dropdown items
   List<Item> constructionFieldItems = [];
   List<Item> constructionTypeItems = [];
@@ -72,10 +87,33 @@ class AccidentPageState extends State<AccidentPage> {
   bool showErrorAccidentMonth = false;
   bool showErrorAccidentTime = false;
 
+  void validateFields() {
+    setState(() {
+      validationErrors['constructionField'] = selectedConstructionField == null;
+      validationErrors['constructionType'] = selectedConstructionType == null;
+      validationErrors['workType'] = selectedWorkType == null;
+      validationErrors['constructionMethod'] =
+          selectedConstructionMethod == null;
+      validationErrors['disasterCategory'] = selectedDisasterCategory == null;
+      validationErrors['accidentCategory'] = selectedAccidentCategory == null;
+      validationErrors['accidentLocationPref'] = accidentLocationPref == null;
+      validationErrors['accidentYear'] = accidentYear == null;
+      validationErrors['accidentMonth'] = accidentMonth == null;
+      validationErrors['accidentTime'] = accidentTime == null;
+    });
+  }
+
+  bool isFormValid() {
+    validateFields();
+    return !validationErrors.containsValue(true);
+  }
+
   @override
   void initState() {
     super.initState();
-    fetchDropDownItems();
+    final dropdownProvider =
+        Provider.of<DropdownProvider>(context, listen: false);
+    dropdownProvider.fetchAllDropdownItems();
     if (widget.isEditing && widget.accident != null) {
       // Pre-fill fields for editing
       selectedConstructionField = widget.accident!.constructionField;
@@ -100,26 +138,6 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  // Fetch items for dropdown lists
-  Future<void> fetchDropDownItems() async {
-    constructionFieldItems =
-        await _supabaseService.fetchItems('ConstructionField');
-    constructionTypeItems =
-        await _supabaseService.fetchItems('ConstructionType');
-    workTypeItems = await _supabaseService.fetchItems('WorkType');
-    constructionMethodItems =
-        await _supabaseService.fetchItems('ConstructionMethod');
-    disasterCategoryItems =
-        await _supabaseService.fetchItems('DisasterCategory');
-    accidentCategoryItems =
-        await _supabaseService.fetchItems('AccidentCategory');
-    weatherItems = await _supabaseService.fetchItems('Weather');
-    accidentLocationPrefItems =
-        await _supabaseService.fetchItems('AccidentLocationPref');
-
-    setState(() {}); // Update the UI after fetching items
-  }
-
   Future<void> handleZipCodeSubmit(String zipCode) async {
     final address = await fetchAddressFromZipCode(zipCode);
 
@@ -141,54 +159,29 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   Future<void> saveAccident() async {
-    if (widget.isEditing && widget.accident != null) {
-      // Retrieve the latest values from the controllers
-      zipcode = int.tryParse(_zipCodeController.text);
-      addressDetail = _addressController.text;
+    Map<String, dynamic> updatedAccidentData = {
+      'ConstructionField': selectedConstructionField,
+      'ConstructionType': selectedConstructionType,
+      'WorkType': selectedWorkType,
+      'ConstructionMethod': selectedConstructionMethod,
+      'DisasterCategory': selectedDisasterCategory,
+      'AccidentCategory': selectedAccidentCategory,
+      'Weather': selectedWeather,
+      'AccidentLocationPref': accidentLocationPref,
+      'AccidentYear': accidentYear,
+      'AccidentMonth': accidentMonth,
+      'AccidentTime': accidentTime,
+      'AccidentBackground': accidentBackground,
+      'AccidentCause': accidentCause,
+      'AccidentCountermeasure': accidentCountermeasure,
+      'Zipcode': int.tryParse(_zipCodeController.text),
+      'AddressDetail': _addressController.text,
+    };
 
-      // Update the accident record
-      Map<String, dynamic> updatedAccidentData = {
-        'ConstructionField': selectedConstructionField,
-        'ConstructionType': selectedConstructionType,
-        'WorkType': selectedWorkType,
-        'ConstructionMethod': selectedConstructionMethod,
-        'DisasterCategory': selectedDisasterCategory,
-        'AccidentCategory': selectedAccidentCategory,
-        'Weather': selectedWeather,
-        'AccidentLocationPref': accidentLocationPref,
-        'AccidentYear': accidentYear,
-        'AccidentMonth': accidentMonth,
-        'AccidentTime': accidentTime,
-        'AccidentBackground': accidentBackground,
-        'AccidentCause': accidentCause,
-        'AccidentCountermeasure': accidentCountermeasure,
-        'Zipcode': zipcode,
-        'AddressDetail': _addressController.text,
-      };
-      await _supabaseService.updateAccident(
-          widget.accident!.accidentId, updatedAccidentData);
-    } else {
-      // Add new accident record
-      Map<String, dynamic> newAccidentData = {
-        'ConstructionField': selectedConstructionField,
-        'ConstructionType': selectedConstructionType,
-        'WorkType': selectedWorkType,
-        'ConstructionMethod': selectedConstructionMethod,
-        'DisasterCategory': selectedDisasterCategory,
-        'AccidentCategory': selectedAccidentCategory,
-        'Weather': selectedWeather,
-        'AccidentLocationPref': accidentLocationPref,
-        'AccidentYear': accidentYear,
-        'AccidentMonth': accidentMonth,
-        'AccidentTime': accidentTime,
-        'AccidentBackground': accidentBackground,
-        'AccidentCause': accidentCause,
-        'AccidentCountermeasure': accidentCountermeasure,
-        'Zipcode': zipcode,
-        'AddressDetail': _addressController.text,
-      };
-      await _supabaseService.addAccident(newAccidentData);
-    }
+    await _supabaseService.updateAccident(
+      widget.accident!.accidentId,
+      updatedAccidentData,
+    );
     if (mounted) {
       Navigator.of(context).pop(true);
     }
@@ -196,33 +189,7 @@ class AccidentPageState extends State<AccidentPage> {
 
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
-    // Retrieve the latest values from the controllers
-    zipcode = int.tryParse(_zipCodeController.text);
-    addressDetail = _addressController.text;
-
-    setState(() {
-      showErrorConstructionField = selectedConstructionField == null;
-      showErrorConstructionType = selectedConstructionType == null;
-      showErrorWorkType = selectedWorkType == null;
-      showErrorConstructionMethod = selectedConstructionMethod == null;
-      showErrorDisasterCategory = selectedDisasterCategory == null;
-      showErrorAccidentCategory = selectedAccidentCategory == null;
-      showErrorAccidentLocationPref = accidentLocationPref == null;
-      showErrorAccidentYear = accidentYear == null;
-      showErrorAccidentMonth = accidentMonth == null;
-      showErrorAccidentTime = accidentTime == null;
-    });
-
-    if (!showErrorConstructionField &&
-        !showErrorConstructionType &&
-        !showErrorWorkType &&
-        !showErrorConstructionMethod &&
-        !showErrorDisasterCategory &&
-        !showErrorAccidentCategory &&
-        !showErrorAccidentLocationPref &&
-        !showErrorAccidentYear &&
-        !showErrorAccidentMonth &&
-        !showErrorAccidentTime) {
+    if (isFormValid()) {
       // Proceed with saving data
       Map<String, dynamic> newAccidentData = {
         'ConstructionField': selectedConstructionField,
@@ -254,6 +221,7 @@ class AccidentPageState extends State<AccidentPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final dropdownProvider = Provider.of<DropdownProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -293,73 +261,78 @@ class AccidentPageState extends State<AccidentPage> {
             CustomDropdown(
               label: localizations.constructionType,
               value: selectedConstructionField,
-              items: constructionFieldItems,
+              items: dropdownProvider.constructionFieldItems,
               onChanged: (value) {
                 setState(() {
                   selectedConstructionField = value;
                 });
               },
             ),
-            if (showErrorConstructionField) const ValidationErrorText(),
+            if (validationErrors['constructionField']!)
+              const ValidationErrorText(),
             CustomDropdown(
               label: localizations.constructionField,
               value: selectedConstructionType,
-              items: constructionTypeItems,
+              items: dropdownProvider.constructionTypeItems,
               onChanged: (value) {
                 setState(() {
                   selectedConstructionType = value;
                 });
               },
             ),
-            if (showErrorConstructionType) const ValidationErrorText(),
+            if (validationErrors['constructionType']!)
+              const ValidationErrorText(),
             CustomDropdown(
               label: localizations.workType,
               value: selectedWorkType,
-              items: workTypeItems,
+              items: dropdownProvider.workTypeItems,
               onChanged: (value) {
                 setState(() {
                   selectedWorkType = value;
                 });
               },
             ),
-            if (showErrorWorkType) const ValidationErrorText(),
+            if (validationErrors['workType']!) const ValidationErrorText(),
             CustomDropdown(
               label: localizations.constructionMethod,
               value: selectedConstructionMethod,
-              items: constructionMethodItems,
+              items: dropdownProvider.constructionMethodItems,
               onChanged: (value) {
                 setState(() {
                   selectedConstructionMethod = value;
                 });
               },
             ),
-            if (showErrorConstructionMethod) const ValidationErrorText(),
+            if (validationErrors['constructionMethod']!)
+              const ValidationErrorText(),
             CustomDropdown(
               label: localizations.disasterCategory,
               value: selectedDisasterCategory,
-              items: disasterCategoryItems,
+              items: dropdownProvider.disasterCategoryItems,
               onChanged: (value) {
                 setState(() {
                   selectedDisasterCategory = value;
                 });
               },
             ),
-            if (showErrorDisasterCategory) const ValidationErrorText(),
+            if (validationErrors['disasterCategory']!)
+              const ValidationErrorText(),
             CustomDropdown(
               label: localizations.accidentCategory,
               value: selectedAccidentCategory,
-              items: accidentCategoryItems,
+              items: dropdownProvider.accidentCategoryItems,
               onChanged: (value) {
                 setState(() {
                   selectedAccidentCategory = value;
                 });
               },
             ),
-            if (showErrorAccidentCategory) const ValidationErrorText(),
+            if (validationErrors['accidentCategory']!)
+              const ValidationErrorText(),
             CustomDropdown(
               label: localizations.weather,
               value: selectedWeather,
-              items: weatherItems,
+              items: dropdownProvider.weatherItems,
               onChanged: (value) {
                 setState(() {
                   selectedWeather = value;
@@ -385,14 +358,15 @@ class AccidentPageState extends State<AccidentPage> {
             CustomDropdown(
               label: localizations.accidentLocationPref,
               value: accidentLocationPref,
-              items: accidentLocationPrefItems,
+              items: dropdownProvider.accidentLocationPrefItems,
               onChanged: (value) {
                 setState(() {
                   accidentLocationPref = value;
                 });
               },
             ),
-            if (showErrorAccidentLocationPref) const ValidationErrorText(),
+            if (validationErrors['accidentLocationPref']!)
+              const ValidationErrorText(),
             TextFormField(
               controller: _addressController,
               decoration: InputDecoration(
@@ -443,6 +417,9 @@ class AccidentPageState extends State<AccidentPage> {
                 ),
               ],
             ),
+            if (validationErrors['accidentYear']! &&
+                validationErrors['accidentMonth']!)
+              const ValidationErrorText(),
             if (showErrorAccidentYear & showErrorAccidentMonth)
               const ValidationErrorText(),
             InkWell(
@@ -461,7 +438,7 @@ class AccidentPageState extends State<AccidentPage> {
                 value: accidentTime,
               ),
             ),
-            if (showErrorAccidentTime) const ValidationErrorText(),
+            if (validationErrors['accidentTime']!) const ValidationErrorText(),
 
             TextFormField(
               decoration: InputDecoration(

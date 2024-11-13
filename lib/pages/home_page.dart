@@ -1,5 +1,5 @@
 import 'package:accident_data_storage/models/item.dart';
-import 'package:accident_data_storage/pages/accident_page.dart';
+import 'package:accident_data_storage/navigation/navigation_helper.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
@@ -38,25 +38,18 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-    Future<void> _navigateToAccidentPage({Accident? accident, required bool isEditing}) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AccidentPage(
-          accident: accident,
-          isEditing: isEditing,
-        ),
-      ),
+  void _openAccidentPage({Accident? accident, required bool isEditing}) {
+    navigateToAccidentPage(
+      context: context,
+      accident: accident,
+      isEditing: isEditing,
+      onPageReturn: () {
+        setState(() {
+          _accidentData = context.read<AccidentProvider>().fetchAccidentData();
+        });
+      },
     );
-
-    if (result == true) {
-      // Triggers a data refresh in AccidentProvider when the user returns
-      setState(() {
-        _accidentData = context.read<AccidentProvider>().fetchAccidentData();
-      });
-    }
   }
-
 
   void _showFilterBottomSheet() {
     showModalBottomSheet(
@@ -65,9 +58,12 @@ class HomePageState extends State<HomePage> {
       builder: (context) {
         return FilterBottomSheet(
           onApplyFilters: (filters) {
-                Provider.of<AccidentProvider>(context, listen: false).updateFilters(filters);
+            Provider.of<AccidentProvider>(context, listen: false)
+                .updateFilters(filters);
             setState(() {
-              _accidentData = Provider.of<AccidentProvider>(context, listen: false).fetchAccidentData();
+              _accidentData =
+                  Provider.of<AccidentProvider>(context, listen: false)
+                      .fetchAccidentData();
             });
           },
         );
@@ -98,7 +94,6 @@ class HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 8.0),
-
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -123,7 +118,7 @@ class HomePageState extends State<HomePage> {
                     accidentData: _accidentData,
                     itemList: itemList,
                     fetchItemName: SupabaseService().fetchItemName,
-                    onAccidentTap: (accident) => _navigateToAccidentPage(
+                    onAccidentTap: (accident) => _openAccidentPage(
                       accident: accident,
                       isEditing: true,
                     ),
@@ -135,7 +130,7 @@ class HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToAccidentPage(isEditing: false),
+        onPressed: () => _openAccidentPage(isEditing: false),
         icon: const Icon(Icons.add),
         label: Text(AppLocalizations.of(context)!.create),
       ),

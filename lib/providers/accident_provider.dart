@@ -42,19 +42,17 @@ class AccidentProvider with ChangeNotifier {
   // Method to update filters
   void updateFilters(Map<String, dynamic> filters) {
     _currentFilters = filters;
-    notifyListeners(); // Notify UI to rebuild based on new filters
+    notifyListeners();
   }
 
   // Method to update sorting
   void updateSorting(String sortBy) {
     if (_currentSortBy == sortBy) {
-      // Toggle ascending/descending if the same sort item is pressed
       _isAscending = !_isAscending;
     } else {
-      // If a new item is pressed, reset to descending
       _currentSortBy = sortBy;
       _isAscending = false;
     }
-    notifyListeners(); // Notify UI to rebuild based on new sorting
+    notifyListeners();
   }
 }

@@ -1,6 +1,5 @@
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/utils/language_utils.dart';

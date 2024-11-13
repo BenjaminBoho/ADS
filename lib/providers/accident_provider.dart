@@ -1,3 +1,5 @@
+import 'package:accident_data_storage/models/accident_data.dart';
+import 'package:accident_data_storage/services/address_services.dart';
 import 'package:flutter/material.dart';
 import '../models/accident.dart';
 import '../models/item.dart';
@@ -54,5 +56,43 @@ class AccidentProvider with ChangeNotifier {
       _isAscending = false;
     }
     notifyListeners();
+  }
+
+  // Add a new accident
+  Future<bool> addAccident(AccidentData accidentData) async {
+    try {
+      await _supabaseService.addAccident(accidentData.toMap());
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error adding accident: $e');
+      return false;
+    }
+  }
+
+  // Update an existing accident
+  Future<bool> updateAccident(Accident accident) async {
+    try {
+      await _supabaseService.updateAccident(accident.accidentId, accident.toMap());
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating accident: $e');
+      return false;
+    }
+  }
+
+  Future<String?> handleZipCodeSubmit(String zipCode, TextEditingController addressController, List<Item> accidentLocationPrefItems) async {
+    final address = await fetchAddressFromZipCode(zipCode);
+
+    if (address != null) {
+      addressController.text = '${address.address2} ${address.address3}';
+      final prefItem = accidentLocationPrefItems.firstWhere(
+        (item) => item.itemName == address.address1,
+      );
+      return prefItem.itemValue;
+    } else {
+      return null;
+    }
   }
 }

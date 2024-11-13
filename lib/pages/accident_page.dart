@@ -1,6 +1,7 @@
 import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/models/accident_data.dart';
+import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
-import 'package:accident_data_storage/services/address_services.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -139,15 +140,20 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
-    final address = await fetchAddressFromZipCode(zipCode);
+    final dropdownProvider =
+        Provider.of<DropdownProvider>(context, listen: false);
+    final accidentProvider =
+        Provider.of<AccidentProvider>(context, listen: false);
 
-    if (address != null) {
+    final prefValue = await accidentProvider.handleZipCodeSubmit(
+      zipCode,
+      _addressController,
+      dropdownProvider.accidentLocationPrefItems,
+    );
+
+    if (prefValue != null) {
       setState(() {
-        _addressController.text = '${address.address2} ${address.address3}';
-
-        accidentLocationPref = accidentLocationPrefItems
-            .firstWhere((item) => item.itemName == address.address1)
-            .itemValue;
+        accidentLocationPref = prefValue;
       });
     } else {
       if (mounted) {
@@ -159,29 +165,29 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   Future<void> saveAccident() async {
-    Map<String, dynamic> updatedAccidentData = {
-      'ConstructionField': selectedConstructionField,
-      'ConstructionType': selectedConstructionType,
-      'WorkType': selectedWorkType,
-      'ConstructionMethod': selectedConstructionMethod,
-      'DisasterCategory': selectedDisasterCategory,
-      'AccidentCategory': selectedAccidentCategory,
-      'Weather': selectedWeather,
-      'AccidentLocationPref': accidentLocationPref,
-      'AccidentYear': accidentYear,
-      'AccidentMonth': accidentMonth,
-      'AccidentTime': accidentTime,
-      'AccidentBackground': accidentBackground,
-      'AccidentCause': accidentCause,
-      'AccidentCountermeasure': accidentCountermeasure,
-      'Zipcode': int.tryParse(_zipCodeController.text),
-      'AddressDetail': _addressController.text,
-    };
-
-    await _supabaseService.updateAccident(
-      widget.accident!.accidentId,
-      updatedAccidentData,
+    final updatedAccident = Accident(
+      accidentId: widget.accident!.accidentId,
+      constructionField: selectedConstructionField!,
+      constructionType: selectedConstructionType!,
+      workType: selectedWorkType!,
+      constructionMethod: selectedConstructionMethod!,
+      disasterCategory: selectedDisasterCategory!,
+      accidentCategory: selectedAccidentCategory!,
+      weather: selectedWeather,
+      accidentYear: accidentYear!,
+      accidentMonth: accidentMonth!,
+      accidentTime: accidentTime!,
+      accidentLocationPref: accidentLocationPref!,
+      accidentBackground: accidentBackground,
+      accidentCause: accidentCause,
+      accidentCountermeasure: accidentCountermeasure,
+      zipcode: int.tryParse(_zipCodeController.text),
+      addressDetail: _addressController.text,
     );
+
+    await Provider.of<AccidentProvider>(context, listen: false)
+        .updateAccident(updatedAccident);
+
     if (mounted) {
       Navigator.of(context).pop(true);
     }
@@ -190,24 +196,28 @@ class AccidentPageState extends State<AccidentPage> {
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
     if (isFormValid()) {
-      // Proceed with saving data
-      Map<String, dynamic> newAccidentData = {
-        'ConstructionField': selectedConstructionField,
-        'ConstructionType': selectedConstructionType,
-        'WorkType': selectedWorkType,
-        'ConstructionMethod': selectedConstructionMethod,
-        'DisasterCategory': selectedDisasterCategory,
-        'AccidentCategory': selectedAccidentCategory,
-        'Weather': selectedWeather,
-        'AccidentLocationPref': accidentLocationPref,
-        'AccidentYear': accidentYear,
-        'AccidentMonth': accidentMonth,
-        'AccidentTime': accidentTime,
-        'AccidentBackground': accidentBackground,
-        'AccidentCause': accidentCause,
-        'AccidentCountermeasure': accidentCountermeasure,
-      };
-      await _supabaseService.addAccident(newAccidentData);
+      final newAccident = AccidentData(
+        constructionField: selectedConstructionField!,
+        constructionType: selectedConstructionType!,
+        workType: selectedWorkType!,
+        constructionMethod: selectedConstructionMethod!,
+        disasterCategory: selectedDisasterCategory!,
+        accidentCategory: selectedAccidentCategory!,
+        weather: selectedWeather,
+        accidentYear: accidentYear!,
+        accidentMonth: accidentMonth!,
+        accidentTime: accidentTime!,
+        accidentLocationPref: accidentLocationPref!,
+        accidentBackground: accidentBackground,
+        accidentCause: accidentCause,
+        accidentCountermeasure: accidentCountermeasure,
+        zipcode: int.tryParse(_zipCodeController.text),
+        addressDetail: _addressController.text,
+      );
+
+      await Provider.of<AccidentProvider>(context, listen: false)
+          .addAccident(newAccident);
+
       if (mounted) {
         Navigator.pop(context, true);
       }

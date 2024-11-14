@@ -139,7 +139,7 @@ class AccidentPageState extends State<AccidentPage> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
+          SnackBar(content: Text(AppLocalizations.of(context)!.noAddressFound)),
         );
       }
     }

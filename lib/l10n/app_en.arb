@@ -2,7 +2,7 @@
     "@@locale": "en",
     "login": "Login",
     "logout": "Logout",
-    "logoutConfirm": "Are you sure you want to log out?",
+    "logoutConfirm": "Are you sure you want to logout?",
     "create": "Create",
     "accidentID": "AccidentID",
     "constructionType": "Construction type",
@@ -44,5 +44,6 @@
     "ok": "OK",
     "filter": "Filter",
     "applyFilter": "Apply Filter",
-    "noDataFound": "No data found"
+    "noDataFound": "No data found",
+    "noAddressFound": "Address not found."
 }

@@ -5,8 +5,8 @@
     "logoutConfirm": "ログアウトしてもよろしいですか？",
     "create": "新規作成",
     "accidentID": "事故ID",
-    "constructionType": "工事分野",
-    "constructionField": "工事の種類",
+    "constructionType": "工事の種類",
+    "constructionField": "工事分野",
     "workType": "工種",
     "constructionMethod": "工法・形式名",
     "disasterCategory": "災害分類",
@@ -44,5 +44,6 @@
     "ok": "OK",
     "filter": "フィルター",
     "applyFilter": "フィルターを適用",
-    "noDataFound": "データが見つかりません"
+    "noDataFound": "データが見つかりません",
+    "noAddressFound": "住所が見つかりません"
 }

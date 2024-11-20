@@ -1,4 +1,6 @@
 import 'package:accident_data_storage/models/accident.dart';
+import 'package:accident_data_storage/models/stakeholder.dart';
+import 'package:accident_data_storage/models/stakeholder_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:accident_data_storage/models/item.dart';
@@ -143,6 +145,95 @@ class SupabaseService {
       if (kDebugMode) {
         print('Error deleting accident: $e');
       }
+    }
+  }
+
+  Future<void> addStakeholder(Map<String, dynamic> stakeholderData) async {
+    try {
+      await _client.from('Stakeholders').insert(stakeholderData);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error adding stakeholders: $e');
+      }
+    }
+  }
+
+  Future<void> addAccidentWithStakeholders(Map<String, dynamic> accidentData,
+      List<StakeholderData> stakeholders) async {
+    try {
+      // Insert accident and fetch the generated AccidentId
+      final response = await _client
+          .from('Accidents')
+          .insert(accidentData)
+          .select('AccidentId') // Retrieve the AccidentId
+          .single();
+
+      final accidentId = response['AccidentId'] as int;
+
+      // Add stakeholders
+      for (var stakeholder in stakeholders) {
+        final stakeholderData = stakeholder.toMap();
+        stakeholderData['AccidentId'] = accidentId;
+        await addStakeholder(stakeholderData);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error adding accident with stakeholders: $e');
+      }
+    }
+  }
+
+  Future<void> updateStakeholder(
+      int accidentId, Map<String, dynamic> stakeholderData) async {
+    try {
+      await _client
+          .from('Stakeholders')
+          .update(stakeholderData)
+          .eq('AccidentId', accidentId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating accident: $e');
+      }
+    }
+  }
+
+  Future<void> deleteStakeholder(int stakeholderId) async {
+    try {
+      await _client
+          .from('Stakeholders')
+          .delete()
+          .eq('StakeholdersId', stakeholderId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting stakeholder: $e');
+      }
+    }
+  }
+
+  Future<List<Stakeholder>> fetchStakeholders(int accidentId) async {
+    try {
+      // Query the Stakeholders table where AccidentId matches the given accidentId
+      final data = await _client
+          .from('Stakeholders')
+          .select('*')
+          .eq('AccidentId', accidentId);
+
+      // Map the returned data into a list of Stakeholder objects
+      final stakeholderList = (data as List<dynamic>).map((item) {
+        return Stakeholder.fromMap(item as Map<String, dynamic>);
+      }).toList();
+
+      if (kDebugMode) {
+        print('Stakeholders fetched: $stakeholderList');
+      }
+
+      return stakeholderList;
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('Fetch Stakeholders error: $e');
+        print('Stack Trace: $stackTrace');
+      }
+      return [];
     }
   }
 }

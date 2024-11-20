@@ -1,7 +1,9 @@
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/accident_data.dart';
+import 'package:accident_data_storage/models/stakeholder_data.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
+import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -11,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:accident_data_storage/models/stakeholder.dart';
 
 class AccidentPage extends StatefulWidget {
   final Accident? accident;
@@ -51,6 +54,12 @@ class AccidentPageState extends State<AccidentPage> {
   String? accidentLocationPref;
   String? addressDetail;
 
+  String? stakeholderRole;
+  String? stakeholderName;
+
+  List<Stakeholder> stakeholders = [];
+  List<TextEditingController> stakeholderNameControllers = [];
+
   Map<String, bool> validationErrors = {
     'constructionField': false,
     'constructionType': false,
@@ -88,13 +97,47 @@ class AccidentPageState extends State<AccidentPage> {
   @override
   void initState() {
     super.initState();
+
     final dropdownProvider =
         Provider.of<DropdownProvider>(context, listen: false);
     dropdownProvider.fetchAllDropdownItems();
+
     if (widget.isEditing && widget.accident != null) {
-      // Pre-fill fields for editing
+      // Pre-fill accident fields
       populateFields(widget.accident!);
+
+      // Fetch and initialize stakeholders for editing
+      Provider.of<StakeholderProvider>(context, listen: false)
+          .fetchStakeholders(widget.accident!.accidentId)
+          .then((fetchedStakeholders) {
+        setState(() {
+          stakeholders = fetchedStakeholders;
+          stakeholderNameControllers = stakeholders
+              .map((stakeholder) =>
+                  TextEditingController(text: stakeholder.name))
+              .toList();
+        });
+      });
+    } else {
+      // Add an empty stakeholder row by default when creating a new accident
+      _addStakeholder();
     }
+  }
+
+  void _addStakeholder() {
+    setState(() {
+      
+    });
+  }
+
+  void _removeStakeholder(int index) {
+    setState(() {
+      if (index < stakeholders.length) {
+        stakeholders.removeAt(index);
+        stakeholderNameControllers[index].dispose();
+        stakeholderNameControllers.removeAt(index);
+      }
+    });
   }
 
   void populateFields(Accident accident) {

@@ -14,6 +14,7 @@ class DropdownProvider with ChangeNotifier {
   List<Item> accidentCategoryItems = [];
   List<Item> weatherItems = [];
   List<Item> accidentLocationPrefItems = [];
+  List<Item> stakeholder = [];
 
   // Method to fetch all items
   Future<void> fetchAllDropdownItems() async {
@@ -25,6 +26,7 @@ class DropdownProvider with ChangeNotifier {
     accidentCategoryItems = await _supabaseService.fetchItems('AccidentCategory');
     weatherItems = await _supabaseService.fetchItems('Weather');
     accidentLocationPrefItems = await _supabaseService.fetchItems('AccidentLocationPref');
+    stakeholder = await _supabaseService.fetchItems('Stakeholder');
 
     notifyListeners(); // Notify listeners when data is fetched
   }

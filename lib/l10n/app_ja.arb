@@ -45,5 +45,7 @@
     "filter": "フィルター",
     "applyFilter": "フィルターを適用",
     "noDataFound": "データが見つかりません",
-    "noAddressFound": "住所が見つかりません"
+    "noAddressFound": "住所が見つかりません",
+    "stakeholderRole": "役職",
+    "stakeholderName": "関係者"
 }

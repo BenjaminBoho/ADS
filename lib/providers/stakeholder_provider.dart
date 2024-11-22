@@ -71,10 +71,10 @@ class StakeholderProvider with ChangeNotifier {
     try {
       await _supabaseService.deleteStakeholder(stakeholderId);
 
-      // Refresh stakeholders list after deletion
+      // Refresh the stakeholder list after deletion
       await fetchStakeholders(accidentId);
     } catch (e) {
-      debugPrint("Error deleting stakeholder: $e");
+      debugPrint('Error deleting stakeholder with ID: $stakeholderId: $e');
     }
   }
 

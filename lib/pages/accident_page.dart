@@ -4,6 +4,7 @@ import 'package:accident_data_storage/models/stakeholder_data.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
+import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -59,6 +60,25 @@ class AccidentPageState extends State<AccidentPage> {
 
   List<Stakeholder> stakeholders = [];
   List<TextEditingController> stakeholderNameControllers = [];
+  List<int> stakeholdersToDelete = [];
+
+  List<StakeholderData> getValidStakeholdersForCreation(int accidentId) {
+    return stakeholders.where((stakeholder) {
+      return stakeholder.role.isNotEmpty && stakeholder.name.isNotEmpty;
+    }).map((stakeholder) {
+      return StakeholderData(
+        accidentId: accidentId,
+        role: stakeholder.role,
+        name: stakeholder.name,
+      );
+    }).toList();
+  }
+
+  List<Stakeholder> getValidStakeholdersForUpdate() {
+    return stakeholders.where((stakeholder) {
+      return stakeholder.role.isNotEmpty && stakeholder.name.isNotEmpty;
+    }).toList();
+  }
 
   Map<String, bool> validationErrors = {
     'constructionField': false,
@@ -98,6 +118,11 @@ class AccidentPageState extends State<AccidentPage> {
   void initState() {
     super.initState();
 
+    // Debugging
+    final supabaseService =
+        Provider.of<SupabaseService>(context, listen: false);
+    debugPrint('SupabaseService initialized: $supabaseService');
+
     final dropdownProvider =
         Provider.of<DropdownProvider>(context, listen: false);
     dropdownProvider.fetchAllDropdownItems();
@@ -106,16 +131,24 @@ class AccidentPageState extends State<AccidentPage> {
       // Pre-fill accident fields
       populateFields(widget.accident!);
 
-      // Fetch and initialize stakeholders for editing
-      Provider.of<StakeholderProvider>(context, listen: false)
-          .fetchStakeholders(widget.accident!.accidentId)
-          .then((fetchedStakeholders) {
-        setState(() {
-          stakeholders = fetchedStakeholders;
-          stakeholderNameControllers = stakeholders
-              .map((stakeholder) =>
-                  TextEditingController(text: stakeholder.name))
-              .toList();
+      // Fetch stakeholders for editing
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<StakeholderProvider>(context, listen: false)
+            .fetchStakeholders(widget.accident!.accidentId)
+            .then((fetchedStakeholders) {
+          setState(() {
+            stakeholders = fetchedStakeholders;
+
+            // Ensure at least one empty stakeholder row exists for editing
+            if (stakeholders.isEmpty) {
+              _addStakeholder();
+            }
+
+            stakeholderNameControllers = stakeholders
+                .map((stakeholder) =>
+                    TextEditingController(text: stakeholder.name))
+                .toList();
+          });
         });
       });
     } else {
@@ -126,13 +159,25 @@ class AccidentPageState extends State<AccidentPage> {
 
   void _addStakeholder() {
     setState(() {
-      
+      stakeholders.add(Stakeholder(
+        stakeholderId: 0, // Temporary placeholder
+        accidentId:
+            widget.accident?.accidentId ?? 0, // Assign accidentId if editing
+        role: '',
+        name: '',
+      ));
+      stakeholderNameControllers.add(TextEditingController());
     });
   }
 
   void _removeStakeholder(int index) {
     setState(() {
       if (index < stakeholders.length) {
+        if (stakeholders[index].stakeholderId != 0) {
+          stakeholdersToDelete.add(stakeholders[index].stakeholderId);
+          debugPrint(
+              'Stakeholder marked for deletion: ${stakeholders[index].stakeholderId}');
+        }
         stakeholders.removeAt(index);
         stakeholderNameControllers[index].dispose();
         stakeholderNameControllers.removeAt(index);
@@ -189,6 +234,11 @@ class AccidentPageState extends State<AccidentPage> {
   }
 
   Future<void> saveAccident() async {
+    final accidentProvider =
+        Provider.of<AccidentProvider>(context, listen: false);
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
+
     final updatedAccident = Accident(
       accidentId: widget.accident!.accidentId,
       constructionField: selectedConstructionField!,
@@ -209,8 +259,27 @@ class AccidentPageState extends State<AccidentPage> {
       addressDetail: _addressController.text,
     );
 
-    await Provider.of<AccidentProvider>(context, listen: false)
-        .updateAccident(updatedAccident);
+    // Update accident data
+    await accidentProvider.updateAccident(updatedAccident);
+
+    // Handle stakeholder updates
+    final validStakeholders = getValidStakeholdersForUpdate();
+    final newStakeholders =
+        stakeholders.where((s) => s.stakeholderId == 0).toList();
+
+    for (var stakeholder in validStakeholders) {
+      await stakeholderProvider.updateStakeholder(stakeholder);
+    }
+
+    for (var newStakeholder in newStakeholders) {
+      final stakeholderData = StakeholderData(
+        accidentId: widget.accident!.accidentId,
+        role: newStakeholder.role,
+        name: newStakeholder.name,
+      );
+      await stakeholderProvider.addStakeholdersForAccident(
+          widget.accident!.accidentId, [stakeholderData]);
+    }
 
     if (mounted) {
       Navigator.of(context).pop(true);
@@ -239,8 +308,19 @@ class AccidentPageState extends State<AccidentPage> {
         addressDetail: _addressController.text,
       );
 
-      await Provider.of<AccidentProvider>(context, listen: false)
-          .addAccident(newAccident);
+      final validStakeholders = getValidStakeholdersForCreation(0);
+
+      // Decide which method to use
+      if (validStakeholders.isNotEmpty) {
+        await Provider.of<SupabaseService>(context, listen: false)
+            .addAccidentWithStakeholders(
+          newAccident.toMap(),
+          validStakeholders.map((s) => s.toMap()).toList(),
+        );
+      } else {
+        await Provider.of<SupabaseService>(context, listen: false)
+            .addAccident(newAccident.toMap());
+      }
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -475,6 +555,72 @@ class AccidentPageState extends State<AccidentPage> {
               ),
             ),
             if (validationErrors['accidentTime']!) const ValidationErrorText(),
+            // Stakeholder Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: List.generate(stakeholders.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          // Role dropdown
+                          Expanded(
+                            flex: 3,
+                            child: CustomDropdown(
+                              label:
+                                  AppLocalizations.of(context)!.stakeholderRole,
+                              value: stakeholders[index].role.isEmpty
+                                  ? null
+                                  : stakeholders[index].role,
+                              items: dropdownProvider.stakeholder,
+                              onChanged: (value) {
+                                setState(() {
+                                  stakeholders[index].role = value ?? '';
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Name text field
+                          Expanded(
+                            flex: 5,
+                            child: TextField(
+                              controller: stakeholderNameControllers[index],
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!
+                                    .stakeholderName,
+                              ),
+                              onChanged: (value) {
+                                stakeholders[index].name = value;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Add or Delete button logic
+                          if (index ==
+                              stakeholders.length -
+                                  1) // Last row gets the add button
+                            IconButton(
+                              icon: const Icon(Icons.add, color: Colors.grey),
+                              onPressed: _addStakeholder,
+                            )
+                          else // All other rows get the delete button
+                            IconButton(
+                              icon:
+                                  const Icon(Icons.delete, color: Colors.grey),
+                              onPressed: () => _removeStakeholder(index),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
 
             TextFormField(
               decoration: InputDecoration(
@@ -487,7 +633,6 @@ class AccidentPageState extends State<AccidentPage> {
                 accidentBackground = value;
               },
             ),
-
             // 事故の要因（背景も含む）入力フィールド
             TextFormField(
               decoration: InputDecoration(

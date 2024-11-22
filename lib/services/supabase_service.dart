@@ -1,6 +1,5 @@
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/stakeholder.dart';
-import 'package:accident_data_storage/models/stakeholder_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:accident_data_storage/models/item.dart';
@@ -158,28 +157,29 @@ class SupabaseService {
     }
   }
 
-  Future<void> addAccidentWithStakeholders(Map<String, dynamic> accidentData,
-      List<StakeholderData> stakeholders) async {
+  Future<int> addAccidentWithStakeholders(Map<String, dynamic> accidentData,
+      List<Map<String, dynamic>> stakeholders) async {
     try {
-      // Insert accident and fetch the generated AccidentId
-      final response = await _client
-          .from('Accidents')
-          .insert(accidentData)
-          .select('AccidentId') // Retrieve the AccidentId
-          .single();
+      // Insert the accident and return the created accidentId
+      final response =
+          await _client.from('Accidents').insert(accidentData).select();
+      if (response.isNotEmpty) {
+        final accidentId = response.first['AccidentId'] as int;
 
-      final accidentId = response['AccidentId'] as int;
+        // If there are stakeholders, insert them
+        if (stakeholders.isNotEmpty) {
+          for (var stakeholder in stakeholders) {
+            stakeholder['AccidentId'] = accidentId;
+          }
+          await _client.from('Stakeholders').insert(stakeholders);
+        }
 
-      // Add stakeholders
-      for (var stakeholder in stakeholders) {
-        final stakeholderData = stakeholder.toMap();
-        stakeholderData['AccidentId'] = accidentId;
-        await addStakeholder(stakeholderData);
+        return accidentId;
       }
+      throw Exception('Failed to create accident');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error adding accident with stakeholders: $e');
-      }
+      debugPrint('Error adding accident with stakeholders: $e');
+      rethrow;
     }
   }
 
@@ -202,11 +202,10 @@ class SupabaseService {
       await _client
           .from('Stakeholders')
           .delete()
-          .eq('StakeholdersId', stakeholderId);
+          .eq('StakeholderId', stakeholderId);
     } catch (e) {
-      if (kDebugMode) {
-        print('Error deleting stakeholder: $e');
-      }
+      debugPrint(
+          'Error during deletion query for stakeholder ID: $stakeholderId: $e');
     }
   }
 

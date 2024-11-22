@@ -1,8 +1,8 @@
 class Stakeholder {
   final int stakeholderId;
   final int accidentId;
-  late final String role;
-  final String name;
+  String role;
+  String name;
 
   Stakeholder(
       {required this.stakeholderId,

@@ -45,5 +45,7 @@
     "filter": "Filter",
     "applyFilter": "Apply Filter",
     "noDataFound": "No data found",
-    "noAddressFound": "Address not found."
+    "noAddressFound": "Address not found.",
+    "stakeholderRole": "Role",
+    "stakeholderName": "Stakeholder" 
 }

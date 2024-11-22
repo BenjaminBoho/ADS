@@ -118,11 +118,6 @@ class AccidentPageState extends State<AccidentPage> {
   void initState() {
     super.initState();
 
-    // Debugging
-    final supabaseService =
-        Provider.of<SupabaseService>(context, listen: false);
-    debugPrint('SupabaseService initialized: $supabaseService');
-
     final dropdownProvider =
         Provider.of<DropdownProvider>(context, listen: false);
     dropdownProvider.fetchAllDropdownItems();
@@ -262,12 +257,20 @@ class AccidentPageState extends State<AccidentPage> {
     // Update accident data
     await accidentProvider.updateAccident(updatedAccident);
 
+    // Handle stakeholder deletion
+    for (var stakeholderId in stakeholdersToDelete) {
+      debugPrint('Deleting stakeholder with ID: $stakeholderId');
+      await stakeholderProvider.deleteStakeholder(
+          stakeholderId, updatedAccident.accidentId);
+    }
+
     // Handle stakeholder updates
     final validStakeholders = getValidStakeholdersForUpdate();
     final newStakeholders =
         stakeholders.where((s) => s.stakeholderId == 0).toList();
 
     for (var stakeholder in validStakeholders) {
+      debugPrint('Updating stakeholder: ${stakeholder.stakeholderId}');
       await stakeholderProvider.updateStakeholder(stakeholder);
     }
 
@@ -277,9 +280,14 @@ class AccidentPageState extends State<AccidentPage> {
         role: newStakeholder.role,
         name: newStakeholder.name,
       );
+      debugPrint('Adding new stakeholder: ${newStakeholder.name}');
       await stakeholderProvider.addStakeholdersForAccident(
           widget.accident!.accidentId, [stakeholderData]);
     }
+
+    // Clear the stakeholdersToDelete list after processing
+    stakeholdersToDelete.clear();
+    debugPrint('Cleared stakeholdersToDelete list.');
 
     if (mounted) {
       Navigator.of(context).pop(true);

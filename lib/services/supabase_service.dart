@@ -199,10 +199,12 @@ class SupabaseService {
 
   Future<void> deleteStakeholder(int stakeholderId) async {
     try {
+      debugPrint('Executing deletion query for stakeholder ID: $stakeholderId');
       await _client
           .from('Stakeholders')
           .delete()
           .eq('StakeholderId', stakeholderId);
+      debugPrint('Deletion query executed for stakeholder ID: $stakeholderId');
     } catch (e) {
       debugPrint(
           'Error during deletion query for stakeholder ID: $stakeholderId: $e');

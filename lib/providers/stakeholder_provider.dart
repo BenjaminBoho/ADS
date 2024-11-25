@@ -55,16 +55,18 @@ class StakeholderProvider with ChangeNotifier {
 
   /// Update an existing stakeholder
   Future<void> updateStakeholder(Stakeholder stakeholder) async {
-    try {
-      await _supabaseService.updateStakeholder(
-          stakeholder.stakeholderId, stakeholder.toMap());
-
-      // Refresh stakeholders list after update
-      await fetchStakeholders(stakeholder.accidentId);
-    } catch (e) {
-      debugPrint("Error updating stakeholder: $e");
-    }
+  try {
+    debugPrint('Updating stakeholder with data: ${stakeholder.toMap()}');
+    await _supabaseService.updateStakeholder(
+      stakeholder.stakeholderId,
+      stakeholder.toMap(),
+    );
+    await fetchStakeholders(stakeholder.accidentId);
+  } catch (e) {
+    debugPrint("Error updating stakeholder: $e");
   }
+}
+
 
   /// Delete a stakeholder
   Future<void> deleteStakeholder(int stakeholderId, int accidentId) async {

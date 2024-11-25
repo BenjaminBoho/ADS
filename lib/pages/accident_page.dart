@@ -154,13 +154,14 @@ class AccidentPageState extends State<AccidentPage> {
 
   void _addStakeholder() {
     setState(() {
-      stakeholders.add(Stakeholder(
-        stakeholderId: 0, // Temporary placeholder
-        accidentId:
-            widget.accident?.accidentId ?? 0, // Assign accidentId if editing
-        role: '',
-        name: '',
-      ));
+      stakeholders.add(
+        Stakeholder(
+          stakeholderId: 0,
+          accidentId: widget.accident?.accidentId ?? 0,
+          role: '',
+          name: '',
+        ),
+      );
       stakeholderNameControllers.add(TextEditingController());
     });
   }
@@ -168,14 +169,19 @@ class AccidentPageState extends State<AccidentPage> {
   void _removeStakeholder(int index) {
     setState(() {
       if (index < stakeholders.length) {
+        // Mark stakeholder for deletion if it has a valid ID
         if (stakeholders[index].stakeholderId != 0) {
           stakeholdersToDelete.add(stakeholders[index].stakeholderId);
           debugPrint(
               'Stakeholder marked for deletion: ${stakeholders[index].stakeholderId}');
         }
+
+        // Remove stakeholder from the list and dispose its controller
         stakeholders.removeAt(index);
         stakeholderNameControllers[index].dispose();
         stakeholderNameControllers.removeAt(index);
+
+        debugPrint('Current stakeholders to delete: $stakeholdersToDelete');
       }
     });
   }
@@ -257,37 +263,40 @@ class AccidentPageState extends State<AccidentPage> {
     // Update accident data
     await accidentProvider.updateAccident(updatedAccident);
 
-    // Handle stakeholder deletion
-    for (var stakeholderId in stakeholdersToDelete) {
-      debugPrint('Deleting stakeholder with ID: $stakeholderId');
-      await stakeholderProvider.deleteStakeholder(
-          stakeholderId, updatedAccident.accidentId);
-    }
+    // Filter out invalid stakeholders
+    final validStakeholders = stakeholders.where((s) {
+      return s.role.isNotEmpty && s.name.isNotEmpty;
+    }).toList();
+
+    final newStakeholders =
+        validStakeholders.where((s) => s.stakeholderId == 0).toList();
 
     // Handle stakeholder updates
-    final validStakeholders = getValidStakeholdersForUpdate();
-    final newStakeholders =
-        stakeholders.where((s) => s.stakeholderId == 0).toList();
-
     for (var stakeholder in validStakeholders) {
-      debugPrint('Updating stakeholder: ${stakeholder.stakeholderId}');
-      await stakeholderProvider.updateStakeholder(stakeholder);
+      if (stakeholder.stakeholderId != 0) {
+        await stakeholderProvider.updateStakeholder(stakeholder);
+      }
     }
 
+    // Handle new stakeholders
     for (var newStakeholder in newStakeholders) {
       final stakeholderData = StakeholderData(
         accidentId: widget.accident!.accidentId,
         role: newStakeholder.role,
         name: newStakeholder.name,
       );
-      debugPrint('Adding new stakeholder: ${newStakeholder.name}');
       await stakeholderProvider.addStakeholdersForAccident(
           widget.accident!.accidentId, [stakeholderData]);
     }
 
-    // Clear the stakeholdersToDelete list after processing
-    stakeholdersToDelete.clear();
-    debugPrint('Cleared stakeholdersToDelete list.');
+    // Handle stakeholder deletions
+    for (var stakeholderId in stakeholdersToDelete) {
+      debugPrint('Attempting to delete stakeholder with ID: $stakeholderId');
+      await stakeholderProvider.deleteStakeholder(
+          stakeholderId, widget.accident!.accidentId);
+    }
+    debugPrint('Finished processing deletions.');
+    stakeholdersToDelete.clear(); // Clear list after deletion
 
     if (mounted) {
       Navigator.of(context).pop(true);
@@ -579,9 +588,9 @@ class AccidentPageState extends State<AccidentPage> {
                             child: CustomDropdown(
                               label:
                                   AppLocalizations.of(context)!.stakeholderRole,
-                              value: stakeholders[index].role.isEmpty
-                                  ? null
-                                  : stakeholders[index].role,
+                              value: stakeholders[index].role.isNotEmpty
+                                  ? stakeholders[index].role
+                                  : null, // Ensure no empty value is sent
                               items: dropdownProvider.stakeholder,
                               onChanged: (value) {
                                 setState(() {
@@ -602,26 +611,23 @@ class AccidentPageState extends State<AccidentPage> {
                                     .stakeholderName,
                               ),
                               onChanged: (value) {
-                                stakeholders[index].name = value;
+                                setState(() {
+                                  stakeholders[index].name = value;
+                                });
                               },
                             ),
                           ),
                           const SizedBox(width: 8),
 
-                          // Add or Delete button logic
-                          if (index ==
-                              stakeholders.length -
-                                  1) // Last row gets the add button
-                            IconButton(
-                              icon: const Icon(Icons.add, color: Colors.grey),
-                              onPressed: _addStakeholder,
-                            )
-                          else // All other rows get the delete button
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.delete, color: Colors.grey),
-                              onPressed: () => _removeStakeholder(index),
-                            ),
+                          // Add or Delete button
+                          IconButton(
+                            icon: index == stakeholders.length - 1
+                                ? const Icon(Icons.add, color: Colors.grey)
+                                : const Icon(Icons.delete, color: Colors.grey),
+                            onPressed: index == stakeholders.length - 1
+                                ? _addStakeholder
+                                : () => _removeStakeholder(index),
+                          ),
                         ],
                       ),
                     );

@@ -184,16 +184,18 @@ class SupabaseService {
   }
 
   Future<void> updateStakeholder(
-      int accidentId, Map<String, dynamic> stakeholderData) async {
+      int stakeholderId, Map<String, dynamic> data) async {
     try {
+      debugPrint(
+          'Executing update query for stakeholder ID: $stakeholderId with data: $data');
       await _client
           .from('Stakeholders')
-          .update(stakeholderData)
-          .eq('AccidentId', accidentId);
+          .update(data)
+          .eq('StakeholderId', stakeholderId);
+      debugPrint('Update query executed for stakeholder ID: $stakeholderId');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error updating accident: $e');
-      }
+      debugPrint(
+          'Error during update query for stakeholder ID: $stakeholderId: $e');
     }
   }
 

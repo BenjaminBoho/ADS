@@ -134,10 +134,8 @@ class AccidentPageState extends State<AccidentPage> {
           setState(() {
             stakeholders = fetchedStakeholders;
 
-            // Ensure at least one empty stakeholder row exists for editing
-            if (stakeholders.isEmpty) {
-              _addStakeholder();
-            }
+            // Add an empty stakeholder row for input
+            _addStakeholder();
 
             stakeholderNameControllers = stakeholders
                 .map((stakeholder) =>

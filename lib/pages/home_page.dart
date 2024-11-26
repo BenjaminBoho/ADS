@@ -1,6 +1,7 @@
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/navigation/navigation_helper.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
+import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 import 'package:accident_data_storage/widgets/accident_list_widget.dart';
 import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:accident_data_storage/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:accident_data_storage/widgets/sort_button_row.dart';
+import 'package:accident_data_storage/models/stakeholder.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -71,6 +73,12 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  Future<List<Stakeholder>> fetchStakeholdersForAccident(int accidentId) async {
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
+    return await stakeholderProvider.fetchStakeholders(accidentId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,6 +126,7 @@ class HomePageState extends State<HomePage> {
                     accidentData: _accidentData,
                     itemList: itemList,
                     fetchItemName: SupabaseService().fetchItemName,
+                    fetchStakeholders: fetchStakeholdersForAccident,
                     onAccidentTap: (accident) => _openAccidentPage(
                       accident: accident,
                       isEditing: true,

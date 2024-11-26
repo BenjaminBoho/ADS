@@ -47,5 +47,6 @@
     "noDataFound": "データが見つかりません",
     "noAddressFound": "住所が見つかりません",
     "stakeholderRole": "役職",
-    "stakeholderName": "関係者"
+    "stakeholderName": "関係者",
+    "builder": "施工主"
 }

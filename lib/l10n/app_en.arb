@@ -47,5 +47,6 @@
     "noDataFound": "No data found",
     "noAddressFound": "Address not found.",
     "stakeholderRole": "Role",
-    "stakeholderName": "Stakeholder" 
+    "stakeholderName": "Stakeholder",
+    "builder": "Builder"
 }

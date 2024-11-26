@@ -1,5 +1,6 @@
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/item.dart';
+import 'package:accident_data_storage/models/stakeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/widgets/accident_card.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -9,6 +10,7 @@ class AccidentListWidget extends StatelessWidget {
   final Function(Accident) onAccidentTap;
   final List<Item> itemList;
   final Future<String> Function(List<Item>, String, String) fetchItemName;
+  final Future<List<Stakeholder>> Function(int accidentId) fetchStakeholders;
 
   const AccidentListWidget({
     super.key,
@@ -16,6 +18,7 @@ class AccidentListWidget extends StatelessWidget {
     required this.onAccidentTap,
     required this.itemList,
     required this.fetchItemName,
+    required this.fetchStakeholders,
   });
 
   @override
@@ -38,19 +41,37 @@ class AccidentListWidget extends StatelessWidget {
           itemCount: accidents.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 1,
-            childAspectRatio: 2.4,
+            childAspectRatio: 2.2, //2.5, 2.1
             mainAxisSpacing: 8.0,
             crossAxisSpacing: 8.0,
           ),
           itemBuilder: (context, index) {
             final accident = accidents[index];
-            return InkWell(
-              onTap: () => onAccidentTap(accident),
-              child: AccidentCard(
-                accident: accident,
-                fetchItemName: fetchItemName,
-                itemList: itemList,
-              ),
+            
+            return FutureBuilder<List<Stakeholder>>(
+              future: fetchStakeholders(accident.accidentId),
+              builder: (context, stakeholderSnapshot) {
+                if (stakeholderSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (stakeholderSnapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${stakeholderSnapshot.error}'),
+                  );
+                }
+
+                final stakeholders = stakeholderSnapshot.data ?? [];
+
+                return InkWell(
+                  onTap: () => onAccidentTap(accident),
+                  child: AccidentCard(
+                    accident: accident,
+                    fetchItemName: fetchItemName,
+                    itemList: itemList,
+                    stakeholders: stakeholders,
+                  ),
+                );
+              },
             );
           },
         );

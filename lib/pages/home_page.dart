@@ -88,7 +88,8 @@ class HomePageState extends State<HomePage> {
             .read<StakeholderProvider>()
             .fetchStakeholders(accident!.accidentId!)
         : <Stakeholder>[];
-
+    
+    if (!mounted) return;
     debugPrint(
         'Navigating to AccidentPage with accident: $accident, isEditing: $isEditing, stakeholders: $stakeholders');
 

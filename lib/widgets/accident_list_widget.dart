@@ -29,12 +29,16 @@ class AccidentListWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onAccidentTap(accident),
-          child: AccidentCard(
-            accident: accident,
-            itemList: itemList,
-            fetchItemName: fetchItemName,
-            stakeholders: accident.stakeholders, // Pass directly from accident
-          ),
+          // child: SizedBox(
+          //   height: 190.0,
+            child: AccidentCard(
+              accident: accident,
+              itemList: itemList,
+              fetchItemName: fetchItemName,
+              stakeholders:
+                  accident.stakeholders,
+            ),
+          // ),
         );
       },
     );

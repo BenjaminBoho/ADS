@@ -3,6 +3,7 @@ import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
+import 'package:accident_data_storage/utils/stakeholder_helper.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -74,12 +75,6 @@ class AccidentPageState extends State<AccidentPage> {
     }).toList();
   }
 
-  List<Stakeholder> getValidStakeholdersForUpdate() {
-    return stakeholders.where((stakeholder) {
-      return stakeholder.role.isNotEmpty && stakeholder.name.isNotEmpty;
-    }).toList();
-  }
-
   Map<String, bool> validationErrors = {
     'constructionField': false,
     'constructionType': false,
@@ -146,18 +141,16 @@ class AccidentPageState extends State<AccidentPage> {
 
     // Add or update stakeholders
     for (var stakeholder in stakeholders) {
-      if (stakeholder.role.isNotEmpty && stakeholder.name.isNotEmpty) {
-        if (stakeholder.stakeholderId == null) {
-          // Add new stakeholder
-          await stakeholderProvider.addStakeholdersForAccident(
-            accidentId,
-            [stakeholder],
-          );
-        } else {
-          // Update existing stakeholder
-          await stakeholderProvider.updateStakeholder(stakeholder);
-        }
+      if (stakeholder.role.isEmpty || stakeholder.name.isEmpty) {
+        continue;
       }
+
+      await (stakeholder.stakeholderId == null
+          ? stakeholderProvider.addStakeholdersForAccident(
+              accidentId,
+              [stakeholder],
+            )
+          : stakeholderProvider.updateStakeholder(stakeholder));
     }
 
     // Delete marked stakeholders
@@ -166,15 +159,16 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  void _addStakeholder() {
+  void _addStakeholder({Stakeholder? newStakeholder}) {
     setState(() {
       stakeholders.add(
-        Stakeholder(
-          stakeholderId: null,
-          accidentId: widget.accident?.accidentId ?? 0,
-          role: '',
-          name: '',
-        ),
+        newStakeholder ??
+            Stakeholder(
+              stakeholderId: null,
+              accidentId: widget.accident?.accidentId ?? 0,
+              role: '',
+              name: '',
+            ),
       );
       stakeholderNameControllers.add(TextEditingController());
     });
@@ -281,11 +275,15 @@ class AccidentPageState extends State<AccidentPage> {
 
     // Update accident data
     await accidentProvider.updateAccident(updatedAccident);
+    if (!mounted) return;
 
     // Update stakeholders
-    await handleStakeholders(
+    await StakeholderHelper.handleStakeholdersUpdate(
       accidentId: widget.accident!.accidentId!,
+      stakeholders: stakeholders,
       stakeholdersToDelete: stakeholdersToDelete,
+      stakeholderProvider:
+          Provider.of<StakeholderProvider>(context, listen: false),
     );
 
     if (mounted) {

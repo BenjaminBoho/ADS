@@ -54,7 +54,7 @@ class Accident {
       disasterCategory: map['DisasterCategory'] as String,
       accidentCategory: map['AccidentCategory'] as String,
       weather: map['Weather'] as String?,
-      weatherCondition: map['WeatherCondition'] as String?,
+      weatherCondition: map['Weather'] as String?,
       accidentYear: map['AccidentYear'] as int,
       accidentMonth: map['AccidentMonth'] as int,
       accidentTime: map['AccidentTime'] as int,

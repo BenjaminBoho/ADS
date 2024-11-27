@@ -52,14 +52,26 @@ class SupabaseService {
     bool isAscending = false,
   }) async {
     try {
-      PostgrestFilterBuilder query =
-          _client.from('Accidents').select('*') as PostgrestFilterBuilder;
+      PostgrestFilterBuilder query = _client
+          .from('Accidents')
+          .select('*, Stakeholders(*)') as PostgrestFilterBuilder;
+
       query = applyFilters(query, filters ?? {});
       PostgrestTransformBuilder sortedQuery =
           applySorting(query, sortBy, isAscending);
 
-      final data = await sortedQuery;
-      final accidentsList = (data as List<dynamic>).map((item) {
+      final response = await sortedQuery;
+
+      if (response == null) {
+        throw Exception('No data returned from Supabase.');
+      }
+
+      // Log raw data
+      // debugPrint('Raw data from Supabase: $response');
+
+      final data = response as List<dynamic>;
+
+      final accidentsList = data.map((item) {
         return Accident.fromMap(item as Map<String, dynamic>);
       }).toList();
 
@@ -213,29 +225,65 @@ class SupabaseService {
     }
   }
 
+  /// Fetch all stakeholders from the database
+  /// Fetch all stakeholders from the database
+  Future<List<Stakeholder>> fetchAllStakeholders() async {
+    try {
+      // Query all stakeholders
+      final response = await _client.from('Stakeholders').select();
+
+      // Ensure response is in the correct format
+      final data = response as List<dynamic>;
+
+      if (kDebugMode) {
+        debugPrint('Fetched all stakeholders: $data');
+      }
+
+      // Map data to Stakeholder objects
+      return data.map((item) {
+        return Stakeholder.fromMap(item as Map<String, dynamic>);
+      }).toList();
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('Error fetching all stakeholders: $e');
+        debugPrint('Stack Trace: $stackTrace');
+      }
+
+      // Return an empty list in case of error
+      return [];
+    }
+  }
+
+  /// Fetch stakeholders for a specific accident by AccidentId
   Future<List<Stakeholder>> fetchStakeholders(int accidentId) async {
     try {
-      // Query the Stakeholders table where AccidentId matches the given accidentId
-      final data = await _client
+      debugPrint('Fetching stakeholders for accidentId(service): $accidentId');
+
+      // Query stakeholders for the given accidentId
+      final response = await _client
           .from('Stakeholders')
           .select('*')
           .eq('AccidentId', accidentId);
 
-      // Map the returned data into a list of Stakeholder objects
-      final stakeholderList = (data as List<dynamic>).map((item) {
+      // Ensure response is in the correct format
+      final data = response as List<dynamic>;
+
+      if (kDebugMode) {
+        debugPrint('Fetched stakeholders for accidentId $accidentId: $data');
+      }
+
+      // Map data to Stakeholder objects
+      return data.map((item) {
         return Stakeholder.fromMap(item as Map<String, dynamic>);
       }).toList();
-
-      if (kDebugMode) {
-        print('Stakeholders fetched: $stakeholderList');
-      }
-
-      return stakeholderList;
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        print('Fetch Stakeholders error: $e');
-        print('Stack Trace: $stackTrace');
+        debugPrint(
+            'Error fetching stakeholders for accidentId(service error) $accidentId: $e');
+        debugPrint('Stack Trace: $stackTrace');
       }
+
+      // Return an empty list in case of error
       return [];
     }
   }

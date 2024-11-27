@@ -1,17 +1,17 @@
-import 'package:accident_data_storage/models/item.dart';
-import 'package:accident_data_storage/navigation/navigation_helper.dart';
-import 'package:accident_data_storage/providers/accident_provider.dart';
-import 'package:accident_data_storage/providers/stakeholder_provider.dart';
-import 'package:accident_data_storage/widgets/accident_list_widget.dart';
-import 'package:accident_data_storage/widgets/logout_button.dart';
 import 'package:flutter/material.dart';
-import 'package:accident_data_storage/services/supabase_service.dart';
-import 'package:accident_data_storage/models/accident.dart';
-import 'package:accident_data_storage/widgets/filter_bottom_sheet.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:accident_data_storage/widgets/sort_button_row.dart';
-import 'package:accident_data_storage/models/stakeholder.dart';
+import '../models/accident.dart';
+import '../models/item.dart';
+import '../models/stakeholder.dart';
+import '../navigation/navigation_helper.dart';
+import '../providers/accident_provider.dart';
+import '../providers/stakeholder_provider.dart';
+import '../services/supabase_service.dart';
+import '../widgets/accident_list_widget.dart';
+import '../widgets/filter_bottom_sheet.dart';
+import '../widgets/logout_button.dart';
+import '../widgets/sort_button_row.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,35 +22,46 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   late Future<List<Accident>> _accidentData;
+  late Future<List<Item>> _itemData;
+  late Future<Map<int, List<Stakeholder>>> _stakeholdersMap;
 
   @override
   void initState() {
     super.initState();
-    final accidentProvider =
-        Provider.of<AccidentProvider>(context, listen: false);
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
+    final accidentProvider = context.read<AccidentProvider>();
+    final stakeholderProvider = context.read<StakeholderProvider>();
+
     _accidentData = accidentProvider.fetchAccidentData();
+    _itemData = accidentProvider.fetchAllItems();
+
+    // Fetch stakeholders for all accidents
+    _stakeholdersMap = _accidentData.then((accidents) async {
+      try {
+        Map<int, List<Stakeholder>> stakeholdersMap = {};
+        for (final accident in accidents) {
+          final stakeholders =
+              await stakeholderProvider.fetchStakeholders(accident.accidentId!);
+          stakeholdersMap[accident.accidentId!] = stakeholders;
+        }
+        return stakeholdersMap;
+      } catch (e, stackTrace) {
+        debugPrint("Error fetching stakeholders: $e");
+        debugPrint("Stack Trace: $stackTrace");
+        return {};
+      }
+    });
   }
 
   void onSortItemPressed(String sortBy) {
-    final accidentProvider =
-        Provider.of<AccidentProvider>(context, listen: false);
+    final accidentProvider = context.read<AccidentProvider>();
     accidentProvider.updateSorting(sortBy);
     setState(() {
       _accidentData = accidentProvider.fetchAccidentData();
     });
-  }
-
-  void _openAccidentPage({Accident? accident, required bool isEditing}) {
-    navigateToAccidentPage(
-      context: context,
-      accident: accident,
-      isEditing: isEditing,
-      onPageReturn: () {
-        setState(() {
-          _accidentData = context.read<AccidentProvider>().fetchAccidentData();
-        });
-      },
-    );
   }
 
   void _showFilterBottomSheet() {
@@ -60,12 +71,10 @@ class HomePageState extends State<HomePage> {
       builder: (context) {
         return FilterBottomSheet(
           onApplyFilters: (filters) {
-            Provider.of<AccidentProvider>(context, listen: false)
-                .updateFilters(filters);
+            final accidentProvider = context.read<AccidentProvider>();
+            accidentProvider.updateFilters(filters);
             setState(() {
-              _accidentData =
-                  Provider.of<AccidentProvider>(context, listen: false)
-                      .fetchAccidentData();
+              _accidentData = accidentProvider.fetchAccidentData();
             });
           },
         );
@@ -73,10 +82,29 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Future<List<Stakeholder>> fetchStakeholdersForAccident(int accidentId) async {
-    final stakeholderProvider =
-        Provider.of<StakeholderProvider>(context, listen: false);
-    return await stakeholderProvider.fetchStakeholders(accidentId);
+  void _openAccidentPage({Accident? accident, required bool isEditing}) async {
+    final stakeholders = isEditing
+        ? await context
+            .read<StakeholderProvider>()
+            .fetchStakeholders(accident!.accidentId!)
+        : <Stakeholder>[];
+
+    debugPrint(
+        'Navigating to AccidentPage with accident: $accident, isEditing: $isEditing, stakeholders: $stakeholders');
+
+    navigateToAccidentPage(
+      context: context,
+      accident: accident,
+      isEditing: isEditing,
+      stakeholders: stakeholders,
+      onPageReturn: () {
+        debugPrint('Returned from AccidentPage');
+        setState(() {
+          final accidentProvider = context.read<AccidentProvider>();
+          _accidentData = accidentProvider.fetchAccidentData();
+        });
+      },
+    );
   }
 
   @override
@@ -106,27 +134,31 @@ class HomePageState extends State<HomePage> {
             child: RefreshIndicator(
               onRefresh: () async {
                 setState(() {
-                  _accidentData =
-                      context.read<AccidentProvider>().fetchAccidentData();
+                  _loadInitialData();
                 });
               },
-              child: FutureBuilder<List<Item>>(
-                future: context.read<AccidentProvider>().fetchAllItems(),
-                builder: (context, snapshot) {
+              child: FutureBuilder(
+                future:
+                    Future.wait([_accidentData, _itemData, _stakeholdersMap]),
+                builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No item data found'));
+                  } else if (!snapshot.hasData || snapshot.data![0].isEmpty) {
+                    return const Center(child: Text('No accidents found'));
                   }
 
-                  final itemList = snapshot.data!;
+                  final accidents = snapshot.data![0] as List<Accident>;
+                  final itemList = snapshot.data![1] as List<Item>;
+                  final stakeholdersMap =
+                      snapshot.data![2] as Map<int, List<Stakeholder>>;
+
                   return AccidentListWidget(
-                    accidentData: _accidentData,
+                    accidents: accidents,
                     itemList: itemList,
                     fetchItemName: SupabaseService().fetchItemName,
-                    fetchStakeholders: fetchStakeholdersForAccident,
+                    stakeholdersMap: stakeholdersMap,
                     onAccidentTap: (accident) => _openAccidentPage(
                       accident: accident,
                       isEditing: true,

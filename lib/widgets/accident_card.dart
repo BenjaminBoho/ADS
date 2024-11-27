@@ -205,18 +205,6 @@ class AccidentCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8.0),
-
-              // Check for Builder Stakeholder
-              if (stakeholders.any((s) => s.role == 'Builder'))
-                ...stakeholders.where((s) => s.role == 'Builder').map(
-                      (builderStakeholder) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5.0),
-                        child: Text(
-                          '${AppLocalizations.of(context)!.builder}: ${builderStakeholder.name}',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ),
             ],
           ),
         ),

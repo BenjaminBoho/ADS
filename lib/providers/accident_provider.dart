@@ -1,4 +1,3 @@
-import 'package:accident_data_storage/models/accident_data.dart';
 import 'package:accident_data_storage/services/address_services.dart';
 import 'package:flutter/material.dart';
 import '../models/accident.dart';
@@ -59,7 +58,7 @@ class AccidentProvider with ChangeNotifier {
   }
 
   // Add a new accident
-  Future<bool> addAccident(AccidentData accidentData) async {
+  Future<bool> addAccident(Accident accidentData) async {
     try {
       await _supabaseService.addAccident(accidentData.toMap());
       notifyListeners();
@@ -71,17 +70,26 @@ class AccidentProvider with ChangeNotifier {
   }
 
   // Update an existing accident
-  Future<bool> updateAccident(Accident accident) async {
-    try {
-      await _supabaseService.updateAccident(
-          accident.accidentId, accident.toMap());
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error updating accident: $e');
+  Future<bool> updateAccident(Accident accidentData) async {
+  try {
+    final accidentId = accidentData.accidentId;
+    if (accidentId == null) {
+      debugPrint('Error: Accident ID is null');
       return false;
     }
+
+    await _supabaseService.updateAccident(
+      accidentId,
+      accidentData.toMap(),
+    );
+    notifyListeners();
+    return true;
+  } catch (e) {
+    debugPrint('Error updating accident: $e');
+    return false;
   }
+}
+
 
   Future<String?> handleZipCodeSubmit(
       String zipCode,

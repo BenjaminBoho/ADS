@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/stakeholder.dart';
-import '../models/stakeholder_data.dart';
 import '../services/supabase_service.dart';
 
 class StakeholderProvider with ChangeNotifier {
@@ -14,18 +13,46 @@ class StakeholderProvider with ChangeNotifier {
   List<Stakeholder> get stakeholders => _stakeholders;
   bool get isLoading => _isLoading;
 
+  /// Fetch all stakeholders for all accidents
+  Future<Map<int, List<Stakeholder>>> fetchAllStakeholdersForAccidents(
+      List<int> accidentIds) async {
+    Map<int, List<Stakeholder>> stakeholdersMap = {};
+
+    for (int accidentId in accidentIds) {
+      stakeholdersMap[accidentId] = await fetchStakeholders(accidentId);
+    }
+
+    return stakeholdersMap;
+  }
+
   /// Fetch stakeholders for a specific accident
   Future<List<Stakeholder>> fetchStakeholders(int accidentId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final fetchedStakeholders =
-          await _supabaseService.fetchStakeholders(accidentId);
+      debugPrint('Fetching stakeholders for accidentId(provider): $accidentId');
 
-      _stakeholders = fetchedStakeholders;
-    } catch (e) {
+      // Fetch data from Supabase
+      final fetchedData = await _supabaseService.fetchStakeholders(accidentId);
+      debugPrint(
+          'Fetched stakeholders for accidentId $accidentId: $fetchedData');
+
+      // If fetchedData contains Stakeholder objects, directly assign
+      if (fetchedData.isNotEmpty) {
+        _stakeholders = fetchedData.cast<Stakeholder>();
+      } else {
+        // Otherwise, map the raw data into Stakeholder objects
+        _stakeholders = fetchedData.map((data) {
+          debugPrint('Mapping stakeholder data: $data');
+          return Stakeholder.fromMap(data as Map<String, dynamic>);
+        }).toList();
+      }
+
+      debugPrint("Mapped stakeholders: $_stakeholders");
+    } catch (e, stackTrace) {
       debugPrint("Error fetching stakeholders: $e");
+      debugPrint("Stack trace: $stackTrace");
       _stakeholders = [];
     } finally {
       _isLoading = false;
@@ -37,14 +64,17 @@ class StakeholderProvider with ChangeNotifier {
 
   /// Add stakeholders during accident creation
   Future<void> addStakeholdersForAccident(
-      int accidentId, List<StakeholderData> stakeholderDataList) async {
+      int accidentId, List<Stakeholder> stakeholderList) async {
     try {
-      for (var stakeholderData in stakeholderDataList) {
-        // Use withAccidentId helper method
-        final updatedStakeholderData =
-            stakeholderData.withAccidentId(accidentId);
+      for (var stakeholder in stakeholderList) {
+        final updatedStakeholder = Stakeholder(
+          stakeholderId: null,
+          accidentId: accidentId,
+          role: stakeholder.role,
+          name: stakeholder.name,
+        );
 
-        await _supabaseService.addStakeholder(updatedStakeholderData.toMap());
+        await _supabaseService.addStakeholder(updatedStakeholder.toMap());
       }
 
       await fetchStakeholders(accidentId);
@@ -55,18 +85,25 @@ class StakeholderProvider with ChangeNotifier {
 
   /// Update an existing stakeholder
   Future<void> updateStakeholder(Stakeholder stakeholder) async {
-  try {
-    debugPrint('Updating stakeholder with data: ${stakeholder.toMap()}');
-    await _supabaseService.updateStakeholder(
-      stakeholder.stakeholderId,
-      stakeholder.toMap(),
-    );
-    await fetchStakeholders(stakeholder.accidentId);
-  } catch (e) {
-    debugPrint("Error updating stakeholder: $e");
-  }
-}
+    try {
+      debugPrint('Updating stakeholder with data: ${stakeholder.toMap()}');
 
+      final stakeholderId = stakeholder.stakeholderId;
+      if (stakeholderId == null) {
+        debugPrint("Stakeholder ID cannot be null when updating");
+        return;
+      }
+
+      await _supabaseService.updateStakeholder(
+        stakeholderId,
+        stakeholder.toMap(),
+      );
+
+      await fetchStakeholders(stakeholder.accidentId);
+    } catch (e) {
+      debugPrint("Error updating stakeholder: $e");
+    }
+  }
 
   /// Delete a stakeholder
   Future<void> deleteStakeholder(int stakeholderId, int accidentId) async {

@@ -1,18 +1,28 @@
 class Stakeholder {
-  final int stakeholderId;
+  final int? stakeholderId;
   final int accidentId;
-  String role;
-  String name;
+  final String role;
+  final String name;
 
-  Stakeholder(
-      {required this.stakeholderId,
-      required this.accidentId,
-      required this.role,
-      required this.name});
+  Stakeholder({
+    this.stakeholderId,
+    required this.accidentId,
+    this.role = '',
+    this.name = '',
+  });
+
+  Stakeholder withAccidentId(int newAccidentId) {
+    return Stakeholder(
+      stakeholderId: stakeholderId,
+      accidentId: newAccidentId,
+      role: role,
+      name: name,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'StakeholderId': stakeholderId,
+      if (stakeholderId != null) 'StakeholderId': stakeholderId,
       'AccidentId': accidentId,
       'StakeholderRole': role,
       'StakeholderName': name,
@@ -21,10 +31,10 @@ class Stakeholder {
 
   factory Stakeholder.fromMap(Map<String, dynamic> map) {
     return Stakeholder(
-      stakeholderId: map['StakeholderId'] as int,
+      stakeholderId: map['StakeholderId'] as int?,
       accidentId: map['AccidentId'] as int,
-      role: map['StakeholderRole'] as String,
-      name: map['StakeholderName'] as String,
+      role: map['StakeholderRole'] as String? ?? '',
+      name: map['StakeholderName'] as String? ?? '',
     );
   }
 }

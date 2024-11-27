@@ -29,8 +29,6 @@ class AccidentListWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onAccidentTap(accident),
-          // child: SizedBox(
-          //   height: 190.0,
             child: AccidentCard(
               accident: accident,
               itemList: itemList,
@@ -38,7 +36,6 @@ class AccidentListWidget extends StatelessWidget {
               stakeholders:
                   accident.stakeholders,
             ),
-          // ),
         );
       },
     );

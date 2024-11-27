@@ -35,8 +35,6 @@ class StakeholderProvider with ChangeNotifier {
 
       // Fetch data from Supabase
       final fetchedData = await _supabaseService.fetchStakeholders(accidentId);
-      debugPrint(
-          'Fetched stakeholders for accidentId $accidentId: $fetchedData');
 
       // If fetchedData contains Stakeholder objects, directly assign
       if (fetchedData.isNotEmpty) {
@@ -48,8 +46,7 @@ class StakeholderProvider with ChangeNotifier {
           return Stakeholder.fromMap(data as Map<String, dynamic>);
         }).toList();
       }
-
-      debugPrint("Mapped stakeholders: $_stakeholders");
+      
     } catch (e, stackTrace) {
       debugPrint("Error fetching stakeholders: $e");
       debugPrint("Stack trace: $stackTrace");

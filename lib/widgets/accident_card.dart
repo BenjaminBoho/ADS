@@ -1,7 +1,6 @@
 import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/models/item.dart';
 import 'package:accident_data_storage/models/stakeholder.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:accident_data_storage/widgets/weather_icon.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,7 +9,7 @@ class AccidentCard extends StatelessWidget {
   final Accident accident;
   final List<Item> itemList;
   final Future<String> Function(List<Item>, String, String) fetchItemName;
-  final List<Stakeholder> stakeholders; // Add stakeholders to the card
+  final List<Stakeholder> stakeholders;
 
   const AccidentCard({
     super.key,
@@ -22,9 +21,6 @@ class AccidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      print('Weather Condition: ${accident.weatherCondition}');
-    }
     IconData? weatherIcon = getWeatherIcon(accident.weatherCondition);
 
     final Stakeholder builder = stakeholders.firstWhere(

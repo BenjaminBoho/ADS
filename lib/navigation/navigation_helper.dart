@@ -10,7 +10,6 @@ Future<void> navigateToAccidentPage({
   required Function onPageReturn,
   required List<Stakeholder> stakeholders,
 }) async {
-  debugPrint('Navigating to AccidentPage with accident: $accident, isEditing: $isEditing');
   final result = await Navigator.push(
     context,
     MaterialPageRoute(

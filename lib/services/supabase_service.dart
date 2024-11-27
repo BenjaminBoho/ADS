@@ -257,8 +257,6 @@ class SupabaseService {
   /// Fetch stakeholders for a specific accident by AccidentId
   Future<List<Stakeholder>> fetchStakeholders(int accidentId) async {
     try {
-      debugPrint('Fetching stakeholders for accidentId(service): $accidentId');
-
       // Query stakeholders for the given accidentId
       final response = await _client
           .from('Stakeholders')
@@ -267,10 +265,6 @@ class SupabaseService {
 
       // Ensure response is in the correct format
       final data = response as List<dynamic>;
-
-      if (kDebugMode) {
-        debugPrint('Fetched stakeholders for accidentId $accidentId: $data');
-      }
 
       // Map data to Stakeholder objects
       return data.map((item) {

@@ -226,7 +226,6 @@ class SupabaseService {
   }
 
   /// Fetch all stakeholders from the database
-  /// Fetch all stakeholders from the database
   Future<List<Stakeholder>> fetchAllStakeholders() async {
     try {
       // Query all stakeholders

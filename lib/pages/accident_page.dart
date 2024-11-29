@@ -293,6 +293,7 @@ class AccidentPageState extends State<AccidentPage> {
 
   bool isFormValid() {
     validateFields();
+    debugPrint('Validation errors: $validationErrors');
     return !validationErrors.containsValue(true);
   }
 
@@ -364,6 +365,8 @@ class AccidentPageState extends State<AccidentPage> {
         );
       } else {
         // Add accident without stakeholders
+        final accidentMap = newAccident.toMap();
+        debugPrint('Accident data to be sent: $accidentMap');
         await supabaseService.addAccident(newAccident.toMap());
       }
 

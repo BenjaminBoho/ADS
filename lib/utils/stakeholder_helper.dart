@@ -2,7 +2,8 @@ import 'package:accident_data_storage/models/stakeholder.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 
 class StakeholderHelper {
-  static List<Stakeholder> prepareStakeholdersForUpdate(List<Stakeholder> stakeholders) {
+  static List<Stakeholder> prepareStakeholdersForUpdate(
+      List<Stakeholder> stakeholders) {
     return stakeholders.where((s) => _isValidStakeholder(s)).toList();
   }
 
@@ -14,8 +15,10 @@ class StakeholderHelper {
     required StakeholderProvider stakeholderProvider,
   }) async {
     final validStakeholders = _getValidStakeholders(stakeholders);
-    await _addOrUpdateStakeholders(accidentId, validStakeholders, stakeholderProvider);
-    await _deleteStakeholders(accidentId, stakeholdersToDelete, stakeholderProvider);
+    await _addOrUpdateStakeholders(
+        accidentId, validStakeholders, stakeholderProvider);
+    await _deleteStakeholders(
+        accidentId, stakeholdersToDelete, stakeholderProvider);
   }
 
   // Adds or updates stakeholders in the database.
@@ -26,7 +29,8 @@ class StakeholderHelper {
   ) async {
     for (var stakeholder in stakeholders) {
       if (stakeholder.stakeholderId == null) {
-        await stakeholderProvider.addStakeholdersForAccident(accidentId, [stakeholder]);
+        await stakeholderProvider
+            .addStakeholdersForAccident(accidentId, [stakeholder]);
       } else {
         await stakeholderProvider.updateStakeholder(stakeholder);
       }
@@ -45,7 +49,8 @@ class StakeholderHelper {
   }
 
   // Filters stakeholders that are valid for processing.
-  static List<Stakeholder> _getValidStakeholders(List<Stakeholder> stakeholders) {
+  static List<Stakeholder> _getValidStakeholders(
+      List<Stakeholder> stakeholders) {
     return stakeholders.where((s) => _isValidStakeholder(s)).toList();
   }
 

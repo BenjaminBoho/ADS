@@ -79,18 +79,17 @@ class Accident {
   @override
   String toString() {
     return 'Accident(accidentId: $accidentId, constructionField: $constructionField, constructionType: $constructionType, workType: $workType, '
-           'constructionMethod: $constructionMethod, disasterCategory: $disasterCategory, accidentCategory: $accidentCategory, '
-           'weather: $weather, accidentYear: $accidentYear, accidentMonth: $accidentMonth, accidentTime: $accidentTime, '
-           'accidentLocationPref: $accidentLocationPref, accidentBackground: $accidentBackground, accidentCause: $accidentCause, '
-           'accidentCountermeasure: $accidentCountermeasure, zipcode: $zipcode, addressDetail: $addressDetail, '
-           'stakeholders: $stakeholders)';
+        'constructionMethod: $constructionMethod, disasterCategory: $disasterCategory, accidentCategory: $accidentCategory, '
+        'weather: $weather, accidentYear: $accidentYear, accidentMonth: $accidentMonth, accidentTime: $accidentTime, '
+        'accidentLocationPref: $accidentLocationPref, accidentBackground: $accidentBackground, accidentCause: $accidentCause, '
+        'accidentCountermeasure: $accidentCountermeasure, zipcode: $zipcode, addressDetail: $addressDetail, '
+        'stakeholders: $stakeholders)';
   }
 }
 
 extension AccidentExtension on Accident {
   Map<String, dynamic> toMap() {
     return {
-      'AccidentId': accidentId,
       'ConstructionField': constructionField,
       'ConstructionType': constructionType,
       'WorkType': workType,
@@ -107,7 +106,6 @@ extension AccidentExtension on Accident {
       'AccidentCountermeasure': accidentCountermeasure,
       'Zipcode': zipcode,
       'AddressDetail': addressDetail,
-      'Stakeholders': stakeholders.map((s) => s.toMap()).toList(),
     };
   }
 }

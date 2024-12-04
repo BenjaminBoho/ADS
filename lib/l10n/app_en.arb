@@ -48,5 +48,19 @@
     "noAddressFound": "Address not found.",
     "stakeholderRole": "Role",
     "stakeholderName": "Stakeholder",
-    "builder": "Builder"
+    "builder": "Builder",
+    "saveError": "Save error",
+    "saveSuccess": "Save success",
+    "overwrite": "Overwrite",
+    "conflictDetected": "Data conflict detected",
+    "dataConflictMessage": "Another user updated the data on {formattedUpdatedAt}. Do you want to proceed with your update?",
+    "@dataConflictMessage": {
+        "description": "Message displayed when a data conflict occurs",
+        "placeholders": {
+            "formattedUpdatedAt": {
+                "type": "String",
+                "example": "2024-12-03 13:02"
+            }
+        }
+    }
 }

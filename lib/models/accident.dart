@@ -21,6 +21,7 @@ class Accident {
   final int? zipcode;
   final String? addressDetail;
   final List<Stakeholder> stakeholders;
+  final DateTime updatedAt;
 
   Accident({
     this.accidentId,
@@ -42,6 +43,7 @@ class Accident {
     this.addressDetail,
     this.weatherCondition,
     this.stakeholders = const [],
+    required this.updatedAt,
   });
 
   factory Accident.fromMap(Map<String, dynamic> map) {
@@ -67,6 +69,7 @@ class Accident {
       stakeholders: (map['Stakeholders'] as List<dynamic>)
           .map((s) => Stakeholder.fromMap(s as Map<String, dynamic>))
           .toList(),
+      updatedAt: DateTime.parse(map['UpdatedAt'] as String),
     );
   }
 
@@ -106,6 +109,7 @@ extension AccidentExtension on Accident {
       'AccidentCountermeasure': accidentCountermeasure,
       'Zipcode': zipcode,
       'AddressDetail': addressDetail,
+      'UpdatedAt': updatedAt.toIso8601String(),
     };
   }
 }

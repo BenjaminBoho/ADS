@@ -5,7 +5,11 @@ import '../models/item.dart';
 import '../services/supabase_service.dart';
 
 class AccidentProvider with ChangeNotifier {
-  final SupabaseService _supabaseService = SupabaseService();
+  final SupabaseService _supabaseService;
+
+  // Constructor with optional SupabaseService
+  AccidentProvider({SupabaseService? supabaseService}) 
+      : _supabaseService = supabaseService ?? SupabaseService();
 
   // State variables for filters and sorting
   Map<String, dynamic> _currentFilters = {};
@@ -78,9 +82,17 @@ class AccidentProvider with ChangeNotifier {
       return false;
     }
 
+    // Fetch the current UpdatedAt value from the accident data
+    final currentUpdatedAt = accidentData.updatedAt.toIso8601String();
+
+    // Prepare the updated accident data
+    final updatedAccidentData = accidentData.toMap();
+    updatedAccidentData['UpdatedAt'] = DateTime.now().toIso8601String();
+
     await _supabaseService.updateAccident(
       accidentId,
-      accidentData.toMap(),
+      updatedAccidentData,
+      currentUpdatedAt,
     );
     notifyListeners();
     return true;

@@ -3,6 +3,7 @@ import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
+import 'package:accident_data_storage/utils/conflict_helper.dart';
 import 'package:accident_data_storage/utils/stakeholder_helper.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
@@ -14,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:accident_data_storage/models/stakeholder.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AccidentPage extends StatefulWidget {
   final Accident? accident;
@@ -242,7 +244,7 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  Future<void> saveAccident() async {
+  Future<void> saveAccident({bool isOverwrite = false}) async {
     if (!isFormValid()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
@@ -271,23 +273,43 @@ class AccidentPageState extends State<AccidentPage> {
       accidentCountermeasure: accidentCountermeasure,
       zipcode: int.tryParse(_zipCodeController.text),
       addressDetail: _addressController.text,
+      updatedAt: isOverwrite ? DateTime.now() : widget.accident!.updatedAt,
     );
 
-    // Update accident data
-    await accidentProvider.updateAccident(updatedAccident);
-    if (!mounted) return;
+    try {
+      // Update accident data
+      await accidentProvider.updateAccident(updatedAccident);
+      if (!mounted) return;
 
-    // Update stakeholders
-    await StakeholderHelper.handleStakeholdersUpdate(
-      accidentId: widget.accident!.accidentId!,
-      stakeholders: stakeholders,
-      stakeholdersToDelete: stakeholdersToDelete,
-      stakeholderProvider:
-          Provider.of<StakeholderProvider>(context, listen: false),
-    );
+      // Update stakeholders
+      await StakeholderHelper.handleStakeholdersUpdate(
+        accidentId: widget.accident!.accidentId!,
+        stakeholders: stakeholders,
+        stakeholdersToDelete: stakeholdersToDelete,
+        stakeholderProvider:
+            Provider.of<StakeholderProvider>(context, listen: false),
+      );
 
-    if (mounted) {
+      if (!mounted) return;
       Navigator.of(context).pop(true);
+    } catch (e) {
+      // Check for conflict detection
+      if (!mounted) return;
+
+      if (e is PostgrestException && e.code == 'CONFLICT' && !isOverwrite) {
+        // Only handle conflict if not already an overwrite attempt
+        final overwrite =
+            await ConflictHelper.handleConflict(context, widget.accident!);
+        if (overwrite == true) {
+          // Retry saveAccident with overwrite flag set to true
+          await saveAccident(isOverwrite: true);
+        }
+      } else {
+        debugPrint('Error saving accident: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
+        );
+      }
     }
   }
 
@@ -348,6 +370,7 @@ class AccidentPageState extends State<AccidentPage> {
       zipcode: int.tryParse(_zipCodeController.text),
       addressDetail: _addressController.text,
       stakeholders: [], // This will be handled separately
+      updatedAt: DateTime.now(),
     );
 
     final supabaseService =

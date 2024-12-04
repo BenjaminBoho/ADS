@@ -127,6 +127,7 @@ class SupabaseService {
 
   Future<void> addAccident(Map<String, dynamic> accidentData) async {
     try {
+      accidentData['UpdatedAt'] = DateTime.now().toIso8601String();
       await _client.from('Accidents').insert(accidentData);
     } catch (e) {
       if (kDebugMode) {
@@ -135,13 +136,28 @@ class SupabaseService {
     }
   }
 
-  Future<void> updateAccident(
-      int accidentId, Map<String, dynamic> accidentData) async {
+  Future<void> updateAccident(int accidentId, Map<String, dynamic> accidentData,
+      String currentUpdatedAt) async {
     try {
-      await _client
+      // Add a new UpdatedAt timestamp
+      accidentData['UpdatedAt'] = DateTime.now().toIso8601String();
+
+      final response = await _client
           .from('Accidents')
           .update(accidentData)
-          .eq('AccidentId', accidentId);
+          .eq('AccidentId', accidentId)
+          .eq('UpdatedAt', currentUpdatedAt);
+
+      if (kDebugMode) {
+        print('Response type: ${response.runtimeType}');
+      }
+
+      if (response.isEmpty) {
+        throw const PostgrestException(
+            message:
+                'Conflict detected: Data has been updated by another user.',
+            code: 'CONFLICT');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error updating accident: $e');

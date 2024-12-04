@@ -45,10 +45,14 @@ dependencies:
   intl: any
   shared_preferences: any
   provider: any
+  postgres: any
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  mockito: ^5.0.17
+  build_runner: ^2.1.7
+  mocktail: any
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

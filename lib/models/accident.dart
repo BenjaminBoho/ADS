@@ -21,7 +21,7 @@ class Accident {
   final int? zipcode;
   final String? addressDetail;
   final List<Stakeholder> stakeholders;
-  final DateTime updatedAt;
+  DateTime updatedAt;
 
   Accident({
     this.accidentId,

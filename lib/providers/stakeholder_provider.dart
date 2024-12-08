@@ -31,8 +31,6 @@ class StakeholderProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Fetching stakeholders for accidentId(provider): $accidentId');
-
       // Fetch data from Supabase
       final fetchedData = await _supabaseService.fetchStakeholders(accidentId);
 

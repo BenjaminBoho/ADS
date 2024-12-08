@@ -75,10 +75,6 @@ class SupabaseService {
         return Accident.fromMap(item as Map<String, dynamic>);
       }).toList();
 
-      if (kDebugMode) {
-        print('Data received: $accidentsList');
-      }
-
       return accidentsList;
     } catch (e, stackTrace) {
       if (kDebugMode) {
@@ -127,7 +123,6 @@ class SupabaseService {
 
   Future<void> addAccident(Map<String, dynamic> accidentData) async {
     try {
-      accidentData['UpdatedAt'] = DateTime.now().toIso8601String();
       await _client.from('Accidents').insert(accidentData);
     } catch (e) {
       if (kDebugMode) {
@@ -137,31 +132,44 @@ class SupabaseService {
   }
 
   Future<void> updateAccident(int accidentId, Map<String, dynamic> accidentData,
-      String currentUpdatedAt) async {
+      String currentUpdatedAt,
+      {bool isOverwrite = false}) async {
     try {
-      // Add a new UpdatedAt timestamp
-      accidentData['UpdatedAt'] = DateTime.now().toIso8601String();
-
-      final response = await _client
-          .from('Accidents')
-          .update(accidentData)
-          .eq('AccidentId', accidentId)
-          .eq('UpdatedAt', currentUpdatedAt);
-
       if (kDebugMode) {
-        print('Response type: ${response.runtimeType}');
+        print('Updating Accident ID: $accidentId');
+        print('Update Data: $accidentData');
+        print('Sending UpdatedAt: $currentUpdatedAt');
       }
 
+      final response = isOverwrite
+          ? await _client
+              .from('Accidents')
+              .update(accidentData)
+              .eq('AccidentId', accidentId)
+              .select()
+          : await _client
+              .from('Accidents')
+              .update(accidentData)
+              .eq('AccidentId', accidentId)
+              .eq('UpdatedAt', currentUpdatedAt)
+              .select();
+
+      if (kDebugMode) {
+        print('Response: $response');
+      }
+
+      // レスポンスが空の場合は競合を検出
       if (response.isEmpty) {
         throw const PostgrestException(
-            message:
-                'Conflict detected: Data has been updated by another user.',
-            code: 'CONFLICT');
+          message: 'Conflict detected: Data has been updated by another user.',
+          code: 'CONFLICT',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error updating accident: $e');
       }
+      rethrow;
     }
   }
 

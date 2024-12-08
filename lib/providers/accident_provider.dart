@@ -8,7 +8,7 @@ class AccidentProvider with ChangeNotifier {
   final SupabaseService _supabaseService;
 
   // Constructor with optional SupabaseService
-  AccidentProvider({SupabaseService? supabaseService}) 
+  AccidentProvider({SupabaseService? supabaseService})
       : _supabaseService = supabaseService ?? SupabaseService();
 
   // State variables for filters and sorting
@@ -74,34 +74,34 @@ class AccidentProvider with ChangeNotifier {
   }
 
   // Update an existing accident
-  Future<bool> updateAccident(Accident accidentData) async {
-  try {
-    final accidentId = accidentData.accidentId;
-    if (accidentId == null) {
-      debugPrint('Error: Accident ID is null');
+  Future<bool> updateAccident(Accident accidentData, {bool isOverwrite = false}) async {
+    try {
+      final accidentId = accidentData.accidentId;
+      if (accidentId == null) {
+        debugPrint('Error: Accident ID is null');
+        return false;
+      }
+
+      // Fetch the current UpdatedAt value from the accident data
+      final currentUpdatedAt = accidentData.updatedAt.toIso8601String();
+
+      // Prepare the updated accident data
+      final updatedAccidentData = accidentData.toMap();
+
+      await _supabaseService.updateAccident(
+        accidentId,
+        updatedAccidentData,
+        currentUpdatedAt,
+        isOverwrite: isOverwrite,
+      );
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating accident: $e');
       return false;
     }
-
-    // Fetch the current UpdatedAt value from the accident data
-    final currentUpdatedAt = accidentData.updatedAt.toIso8601String();
-
-    // Prepare the updated accident data
-    final updatedAccidentData = accidentData.toMap();
-    updatedAccidentData['UpdatedAt'] = DateTime.now().toIso8601String();
-
-    await _supabaseService.updateAccident(
-      accidentId,
-      updatedAccidentData,
-      currentUpdatedAt,
-    );
-    notifyListeners();
-    return true;
-  } catch (e) {
-    debugPrint('Error updating accident: $e');
-    return false;
   }
-}
-
 
   Future<String?> handleZipCodeSubmit(
       String zipCode,

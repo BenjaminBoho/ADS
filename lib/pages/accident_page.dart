@@ -10,6 +10,7 @@ import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
 import 'package:accident_data_storage/widgets/picker_widget.dart';
 import 'package:accident_data_storage/widgets/validation_error_text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -277,8 +278,19 @@ class AccidentPageState extends State<AccidentPage> {
     );
 
     try {
-      // Update accident data
-      await accidentProvider.updateAccident(updatedAccident);
+      if (kDebugMode) {
+        print('Attempting to update accident: ${updatedAccident.toMap()}');
+      }
+
+      // Attempt to update the accident
+      final success = await accidentProvider.updateAccident(updatedAccident, isOverwrite: isOverwrite);
+      if (!success) {
+        throw const PostgrestException(
+            message: 'Update failed', code: 'CONFLICT');
+      }
+      if (kDebugMode) {
+        print('Accident updated successfully.');
+      }
       if (!mounted) return;
 
       // Update stakeholders
@@ -297,15 +309,35 @@ class AccidentPageState extends State<AccidentPage> {
       if (!mounted) return;
 
       if (e is PostgrestException && e.code == 'CONFLICT' && !isOverwrite) {
-        // Only handle conflict if not already an overwrite attempt
+        if (kDebugMode) {
+          print('Conflict detected. Fetching latest data.');
+        }
+
+        // Fetch the latest accident data using AccidentProvider
+        final latestAccident = (await accidentProvider.fetchAccidentData())
+            .firstWhere((accident) =>
+                accident.accidentId == widget.accident!.accidentId);
+        // Update the accident object with the latest UpdatedAt
+        updatedAccident.updatedAt = latestAccident.updatedAt;
+
+        if (kDebugMode) {
+          print('Retrying with UpdatedAt: ${updatedAccident.updatedAt}');
+        }
+
+        if (!mounted) return;
+        // Show the conflict dialog
         final overwrite =
             await ConflictHelper.handleConflict(context, widget.accident!);
+        if (kDebugMode) {
+          print('Conflict resolution result: $overwrite');
+        }
         if (overwrite == true) {
-          // Retry saveAccident with overwrite flag set to true
+          // Retry the save operation with overwrite
+          debugPrint('Overwrite attempt failed for accident ID: ${widget.accident!.accidentId}');
           await saveAccident(isOverwrite: true);
         }
       } else {
-        debugPrint('Error saving accident: $e');
+        debugPrint('Initial update failed for accident ID: ${widget.accident!.accidentId}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
         );

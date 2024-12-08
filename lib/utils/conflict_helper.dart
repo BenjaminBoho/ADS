@@ -17,6 +17,7 @@ class ConflictHelper {
           content: Text(localizations.dataConflictMessage(formattedUpdatedAt)),
           actions: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),

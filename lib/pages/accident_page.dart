@@ -309,16 +309,12 @@ class AccidentPageState extends State<AccidentPage> {
       if (!mounted) return;
 
       if (e is PostgrestException && e.code == 'CONFLICT' && !isOverwrite) {
-        if (kDebugMode) {
-          print('Conflict detected. Fetching latest data.');
-        }
-
         // Fetch the latest accident data using AccidentProvider
         final latestAccident = (await accidentProvider.fetchAccidentData())
             .firstWhere((accident) =>
                 accident.accidentId == widget.accident!.accidentId);
-        // Update the accident object with the latest UpdatedAt
-        updatedAccident.updatedAt = latestAccident.updatedAt;
+
+        final latestUpdatedAt = latestAccident.updatedAt;
 
         if (kDebugMode) {
           print('Retrying with UpdatedAt: ${updatedAccident.updatedAt}');
@@ -327,7 +323,7 @@ class AccidentPageState extends State<AccidentPage> {
         if (!mounted) return;
         // Show the conflict dialog
         final overwrite =
-            await ConflictHelper.handleConflict(context, widget.accident!);
+            await ConflictHelper.handleConflict(context, widget.accident!, latestUpdatedAt);
         if (kDebugMode) {
           print('Conflict resolution result: $overwrite');
         }

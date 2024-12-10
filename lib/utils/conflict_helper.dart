@@ -5,8 +5,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ConflictHelper {
   static Future<bool?> handleConflict(
-      BuildContext context, Accident accident) async {
-    final formattedUpdatedAt = formatUpdatedAt(accident.updatedAt);
+      BuildContext context, Accident accident, DateTime latestUpdatedAt) async {
+    debugTimeConversion(accident.updatedAt);
+    final formattedUpdatedAt = formatUpdatedAt(latestUpdatedAt);
+    
     final localizations = AppLocalizations.of(context)!;
 
     return await showDialog<bool>(

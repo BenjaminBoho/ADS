@@ -5,7 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ConflictHelper {
   static Future<bool?> handleConflict(
-      BuildContext context, Accident accident, DateTime latestUpdatedAt) async {
+      BuildContext context, Accident accident, DateTime latestUpdatedAt, String updatedByEmail) async {
     debugTimeConversion(accident.updatedAt);
     final formattedUpdatedAt = formatUpdatedAt(latestUpdatedAt);
     
@@ -16,7 +16,7 @@ class ConflictHelper {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(localizations.conflictDetected),
-          content: Text(localizations.dataConflictMessage(formattedUpdatedAt)),
+          content: Text(localizations.dataConflictMessage(formattedUpdatedAt, updatedByEmail)),
           actions: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

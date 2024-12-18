@@ -65,10 +65,6 @@ class SupabaseService {
       if (response == null) {
         throw Exception('No data returned from Supabase.');
       }
-
-      // Log raw data
-      // debugPrint('Raw data from Supabase: $response');
-
       final data = response as List<dynamic>;
 
       final accidentsList = data.map((item) {
@@ -123,6 +119,13 @@ class SupabaseService {
 
   Future<void> addAccident(Map<String, dynamic> accidentData) async {
     try {
+      final currentUser = _client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception("User is not logged in");
+      }
+      accidentData['CreatedBy'] = currentUser.id;
+      accidentData['UpdatedBy'] = currentUser.id;
+
       await _client.from('Accidents').insert(accidentData);
     } catch (e) {
       if (kDebugMode) {
@@ -132,13 +135,17 @@ class SupabaseService {
   }
 
   Future<void> updateAccident(int accidentId, Map<String, dynamic> accidentData,
-      String currentUpdatedAt,
       {bool isOverwrite = false}) async {
     try {
+      final currentUser = _client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception("User is not logged in");
+      }
+      accidentData['UpdatedBy'] = currentUser.id;
+
       if (kDebugMode) {
         print('Updating Accident ID: $accidentId');
         print('Update Data: $accidentData');
-        print('Sending UpdatedAt: $currentUpdatedAt');
       }
 
       final response = isOverwrite
@@ -151,19 +158,10 @@ class SupabaseService {
               .from('Accidents')
               .update(accidentData)
               .eq('AccidentId', accidentId)
-              .eq('UpdatedAt', currentUpdatedAt)
               .select();
 
       if (kDebugMode) {
         print('Response: $response');
-      }
-
-      // レスポンスが空の場合は競合を検出
-      if (response.isEmpty) {
-        throw const PostgrestException(
-          message: 'Conflict detected: Data has been updated by another user.',
-          code: 'CONFLICT',
-        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -302,6 +300,41 @@ class SupabaseService {
 
       // Return an empty list in case of error
       return [];
+    }
+  }
+
+  Future<String?> fetchUserEmail(String userId) async {
+    try {
+      final response = await _client
+          .from('Profiles')
+          .select('email')
+          .eq('id', userId)
+          .single();
+
+      return response['email'] as String?;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching user email for userId $userId: $e');
+      }
+      return "Unknown User";
+    }
+  }
+
+  Future<Accident> fetchAccidentById(int accidentId) async {
+    try {
+      final response = await _client
+          .from('Accidents')
+          .select('*, Stakeholders(*)')
+          .eq('AccidentId', accidentId)
+          .single();
+
+      return Accident.fromMap(response);
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('Fetch Accident By ID error: $e');
+        print('Stack Trace: $stackTrace');
+      }
+      rethrow;
     }
   }
 }

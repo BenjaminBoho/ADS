@@ -82,16 +82,12 @@ class AccidentProvider with ChangeNotifier {
         return false;
       }
 
-      // Fetch the current UpdatedAt value from the accident data
-      final currentUpdatedAt = accidentData.updatedAt.toIso8601String();
-
       // Prepare the updated accident data
       final updatedAccidentData = accidentData.toMap();
 
       await _supabaseService.updateAccident(
         accidentId,
         updatedAccidentData,
-        currentUpdatedAt,
         isOverwrite: isOverwrite,
       );
 
@@ -129,5 +125,14 @@ class AccidentProvider with ChangeNotifier {
       debugPrint("Error deleting accident: $e");
       return false;
     }
+  }
+
+  Future<String> getUpdatedByEmail(String userId) async {
+    final email = await _supabaseService.fetchUserEmail(userId);
+    return email ?? "Unknown User";
+  }
+
+  Future<Accident> fetchAccidentById(int accidentId) async {
+    return await _supabaseService.fetchAccidentById(accidentId);
   }
 }

@@ -53,14 +53,19 @@
     "saveSuccess": "Save success",
     "overwrite": "Overwrite",
     "conflictDetected": "Data conflict detected",
-    "dataConflictMessage": "Another user updated the data on {formattedUpdatedAt}. Do you want to proceed with your update?",
+    "dataConflictMessage": "{updatedByEmail} updated the data on {formattedUpdatedAt}. Do you want to proceed with your update?",
     "@dataConflictMessage": {
         "description": "Message displayed when a data conflict occurs",
         "placeholders": {
+            "updatedByEmail": {
+            "type": "String",
+            "example": "john.doe@example.com"
+        },
             "formattedUpdatedAt": {
                 "type": "String",
                 "example": "2024-12-03 13:02"
             }
         }
-    }
+    },
+    "userNotLoggedIn": "User is not logged in"
 }

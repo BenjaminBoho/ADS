@@ -53,14 +53,19 @@
     "saveSuccess": "保存成功しました",
     "overwrite": "上書き続行",
     "conflictDetected": "データの競合が検出されました",
-    "dataConflictMessage": "他のユーザーが {formattedUpdatedAt} にデータを更新しました。更新を続行しますか？",
+    "dataConflictMessage": "{updatedByEmail} が {formattedUpdatedAt} にデータを更新しました。更新を続行しますか？",
     "@dataConflictMessage": {
         "description": "データ競合が発生したときに表示されるメッセージ",
         "placeholders": {
+            "updatedByEmail": {
+            "type": "String",
+            "example": "john.doe@example.com"
+        },
             "formattedUpdatedAt": {
                 "type": "String",
                 "example": "2024-12-03 13:02"
             }
         }
-    }
+    },
+    "userNotLoggedIn": "ユーザーはログインしていません"
 }

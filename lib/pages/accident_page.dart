@@ -55,7 +55,7 @@ class AccidentPageState extends State<AccidentPage> {
   int? accidentMonth;
   int? accidentTime;
 
-  int? zipcode;
+  String? zipcode;
   String? accidentLocationPref;
   String? addressDetail;
 
@@ -216,7 +216,7 @@ class AccidentPageState extends State<AccidentPage> {
     addressDetail = accident.addressDetail;
 
     // Initialize text fields for zip code and address
-    _zipCodeController.text = zipcode != null ? zipcode.toString() : '';
+    _zipCodeController.text = zipcode ?? '';
     _addressController.text = addressDetail ?? '';
   }
 
@@ -245,7 +245,7 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  Future<void> saveAccident({bool isOverwrite = false}) async {
+  Future<void> saveAccident() async {
     if (!isFormValid()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
@@ -255,38 +255,63 @@ class AccidentPageState extends State<AccidentPage> {
 
     final accidentProvider =
         Provider.of<AccidentProvider>(context, listen: false);
-
-    final updatedAccident = Accident(
-      accidentId: widget.accident!.accidentId,
-      constructionField: selectedConstructionField!,
-      constructionType: selectedConstructionType!,
-      workType: selectedWorkType!,
-      constructionMethod: selectedConstructionMethod!,
-      disasterCategory: selectedDisasterCategory!,
-      accidentCategory: selectedAccidentCategory!,
-      weather: selectedWeather,
-      accidentYear: accidentYear!,
-      accidentMonth: accidentMonth!,
-      accidentTime: accidentTime!,
-      accidentLocationPref: accidentLocationPref!,
-      accidentBackground: accidentBackground,
-      accidentCause: accidentCause,
-      accidentCountermeasure: accidentCountermeasure,
-      zipcode: int.tryParse(_zipCodeController.text),
-      addressDetail: _addressController.text,
-      updatedAt: isOverwrite ? DateTime.now() : widget.accident!.updatedAt,
-    );
+    final currentUser = Supabase.instance.client.auth.currentUser;
 
     try {
+      // Check if it's an update or new addition
+      final isUpdate = widget.accident != null;
+
+      final latestAccident = await accidentProvider
+          .fetchAccidentById(widget.accident!.accidentId!);
+      if (latestAccident.updatedAt.isAfter(widget.accident!.updatedAt)) {
+        // Conflict Detection: If the UpdatedAt of the latest data is different
+        final updatedByEmail =
+            await accidentProvider.getUpdatedByEmail(latestAccident.updatedBy);
+        if (!mounted) return;
+        final overwrite = await ConflictHelper.handleConflict(
+          context,
+          widget.accident!,
+          latestAccident.updatedAt,
+          updatedByEmail,
+        );
+
+        if (overwrite != true) {
+          // Cancel
+          return;
+        }
+      }
+
+      final now = DateTime.now().toUtc(); // Use UTC for timestamps
+      final updatedAccident = Accident(
+          accidentId: widget.accident!.accidentId,
+          constructionField: selectedConstructionField!,
+          constructionType: selectedConstructionType!,
+          workType: selectedWorkType!,
+          constructionMethod: selectedConstructionMethod!,
+          disasterCategory: selectedDisasterCategory!,
+          accidentCategory: selectedAccidentCategory!,
+          weather: selectedWeather,
+          accidentYear: accidentYear!,
+          accidentMonth: accidentMonth!,
+          accidentTime: accidentTime!,
+          accidentLocationPref: accidentLocationPref!,
+          accidentBackground: accidentBackground,
+          accidentCause: accidentCause,
+          accidentCountermeasure: accidentCountermeasure,
+          zipcode: _zipCodeController.text,
+          addressDetail: _addressController.text,
+          createdAt: isUpdate ? widget.accident!.createdAt : now,
+          createdBy: isUpdate ? widget.accident!.createdBy : currentUser!.id,
+          updatedAt: now,
+          updatedBy: currentUser!.id);
       if (kDebugMode) {
         print('Attempting to update accident: ${updatedAccident.toMap()}');
       }
 
       // Attempt to update the accident
-      final success = await accidentProvider.updateAccident(updatedAccident, isOverwrite: isOverwrite);
+      final success = await accidentProvider.updateAccident(updatedAccident);
       if (!success) {
-        throw const PostgrestException(
-            message: 'Update failed', code: 'CONFLICT');
+        throw const PostgrestException(message: 'Update failed');
       }
       if (kDebugMode) {
         print('Accident updated successfully.');
@@ -306,38 +331,10 @@ class AccidentPageState extends State<AccidentPage> {
       Navigator.of(context).pop(true);
     } catch (e) {
       // Check for conflict detection
-      if (!mounted) return;
-
-      if (e is PostgrestException && e.code == 'CONFLICT' && !isOverwrite) {
-        // Fetch the latest accident data using AccidentProvider
-        final latestAccident = (await accidentProvider.fetchAccidentData())
-            .firstWhere((accident) =>
-                accident.accidentId == widget.accident!.accidentId);
-
-        final latestUpdatedAt = latestAccident.updatedAt;
-
-        if (kDebugMode) {
-          print('Retrying with UpdatedAt: ${updatedAccident.updatedAt}');
-        }
-
-        if (!mounted) return;
-        // Show the conflict dialog
-        final overwrite =
-            await ConflictHelper.handleConflict(context, widget.accident!, latestUpdatedAt);
-        if (kDebugMode) {
-          print('Conflict resolution result: $overwrite');
-        }
-        if (overwrite == true) {
-          // Retry the save operation with overwrite
-          debugPrint('Overwrite attempt failed for accident ID: ${widget.accident!.accidentId}');
-          await saveAccident(isOverwrite: true);
-        }
-      } else {
-        debugPrint('Initial update failed for accident ID: ${widget.accident!.accidentId}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
-        );
-      }
+      debugPrint('Error saving accident: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
+      );
     }
   }
 
@@ -379,32 +376,43 @@ class AccidentPageState extends State<AccidentPage> {
       return;
     }
 
-    final newAccident = Accident(
-      accidentId: null, // null because it's auto-generated
-      constructionField: selectedConstructionField!,
-      constructionType: selectedConstructionType!,
-      workType: selectedWorkType!,
-      constructionMethod: selectedConstructionMethod!,
-      disasterCategory: selectedDisasterCategory!,
-      accidentCategory: selectedAccidentCategory!,
-      weather: selectedWeather,
-      accidentYear: accidentYear!,
-      accidentMonth: accidentMonth!,
-      accidentTime: accidentTime!,
-      accidentLocationPref: accidentLocationPref!,
-      accidentBackground: accidentBackground,
-      accidentCause: accidentCause,
-      accidentCountermeasure: accidentCountermeasure,
-      zipcode: int.tryParse(_zipCodeController.text),
-      addressDetail: _addressController.text,
-      stakeholders: [], // This will be handled separately
-      updatedAt: DateTime.now(),
-    );
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.userNotLoggedIn)),
+      );
+      return;
+    }
 
     final supabaseService =
         Provider.of<SupabaseService>(context, listen: false);
 
     try {
+      final now = DateTime.now().toUtc();
+      final newAccident = Accident(
+          accidentId: null, // null because it's auto-generated
+          constructionField: selectedConstructionField!,
+          constructionType: selectedConstructionType!,
+          workType: selectedWorkType!,
+          constructionMethod: selectedConstructionMethod!,
+          disasterCategory: selectedDisasterCategory!,
+          accidentCategory: selectedAccidentCategory!,
+          weather: selectedWeather,
+          accidentYear: accidentYear!,
+          accidentMonth: accidentMonth!,
+          accidentTime: accidentTime!,
+          accidentLocationPref: accidentLocationPref!,
+          accidentBackground: accidentBackground,
+          accidentCause: accidentCause,
+          accidentCountermeasure: accidentCountermeasure,
+          zipcode: _zipCodeController.text,
+          addressDetail: _addressController.text,
+          stakeholders: [], // This will be handled separately
+          createdAt: now,
+          createdBy: currentUser.id,
+          updatedAt: now,
+          updatedBy: currentUser.id);
       // Prepare stakeholders for creation
       final stakeholders = await prepareStakeholdersForCreation(0);
 
@@ -563,7 +571,7 @@ class AccidentPageState extends State<AccidentPage> {
               inputFormatters: [LengthLimitingTextInputFormatter(7)],
               keyboardType: TextInputType.number,
               onChanged: (value) {
-                zipcode = int.tryParse(value);
+                zipcode = value;
                 if (value.length == 7) {
                   handleZipCodeSubmit(value);
                 }

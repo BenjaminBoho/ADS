@@ -23,7 +23,6 @@ String formatDate(int accidentYear, String formattedMonth, String formattedHour)
     case Language.en:
       return '$formattedMonth/$accidentYear $formattedHour:00';
     case Language.ja:
-    default:
-      return '$accidentYear年$formattedMonth月 $formattedHour時';
+    return '$accidentYear年$formattedMonth月 $formattedHour時';
   }
 }

@@ -2,9 +2,7 @@ import 'package:accident_data_storage/models/accident.dart';
 import 'package:accident_data_storage/providers/accident_provider.dart';
 import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
-import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/utils/conflict_helper.dart';
-import 'package:accident_data_storage/utils/stakeholder_helper.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -59,24 +57,9 @@ class AccidentPageState extends State<AccidentPage> {
   String? accidentLocationPref;
   String? addressDetail;
 
-  String? stakeholderRole;
-  String? stakeholderName;
-
   List<Stakeholder> stakeholders = [];
   List<TextEditingController> stakeholderNameControllers = [];
   List<int> stakeholdersToDelete = [];
-
-  List<Stakeholder> getValidStakeholdersForCreation(int accidentId) {
-    return stakeholders.where((stakeholder) {
-      return stakeholder.role.isNotEmpty && stakeholder.name.isNotEmpty;
-    }).map((stakeholder) {
-      return Stakeholder(
-        accidentId: accidentId,
-        role: stakeholder.role,
-        name: stakeholder.name,
-      );
-    }).toList();
-  }
 
   Map<String, bool> validationErrors = {
     'constructionField': false,
@@ -100,12 +83,8 @@ class AccidentPageState extends State<AccidentPage> {
     dropdownProvider.fetchAllDropdownItems();
 
     if (widget.isEditing && widget.accident != null) {
-      // Pre-fill accident fields
-      populateFields(widget.accident!);
-
-      // Fetch stakeholders for editing
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        fetchStakeholdersForAccident(widget.accident!.accidentId!);
+        populateAccidentData(widget.accident!);
       });
     } else {
       // Add an empty stakeholder row by default when creating a new accident
@@ -113,91 +92,8 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  Future<void> fetchStakeholdersForAccident(int accidentId) async {
-    final stakeholderProvider =
-        Provider.of<StakeholderProvider>(context, listen: false);
-    final fetchedStakeholders =
-        await stakeholderProvider.fetchStakeholders(accidentId);
-
-    setState(() {
-      stakeholders = fetchedStakeholders;
-      stakeholderNameControllers = List.generate(
-        stakeholders.length,
-        (index) => TextEditingController(
-          text: stakeholders[index].name.isNotEmpty
-              ? stakeholders[index].name
-              : '',
-        ),
-      );
-
-      // Add an empty stakeholder row for new input
-      _addStakeholder();
-    });
-  }
-
-  Future<void> handleStakeholders({
-    required int accidentId,
-    required List<int> stakeholdersToDelete,
-  }) async {
-    final stakeholderProvider =
-        Provider.of<StakeholderProvider>(context, listen: false);
-
-    // Add or update stakeholders
-    for (var stakeholder in stakeholders) {
-      if (stakeholder.role.isEmpty || stakeholder.name.isEmpty) {
-        continue;
-      }
-
-      await (stakeholder.stakeholderId == null
-          ? stakeholderProvider.addStakeholdersForAccident(
-              accidentId,
-              [stakeholder],
-            )
-          : stakeholderProvider.updateStakeholder(stakeholder));
-    }
-
-    // Delete marked stakeholders
-    for (var stakeholderId in stakeholdersToDelete) {
-      await stakeholderProvider.deleteStakeholder(stakeholderId, accidentId);
-    }
-  }
-
-  void _addStakeholder({Stakeholder? newStakeholder}) {
-    setState(() {
-      stakeholders.add(
-        newStakeholder ??
-            Stakeholder(
-              stakeholderId: null,
-              accidentId: widget.accident?.accidentId ?? 0,
-              role: '',
-              name: '',
-            ),
-      );
-      stakeholderNameControllers.add(TextEditingController());
-    });
-  }
-
-  void _removeStakeholder(int index) {
-    setState(() {
-      if (index < stakeholders.length) {
-        // Mark stakeholder for deletion if it has a valid ID
-        if (stakeholders[index].stakeholderId != 0) {
-          stakeholdersToDelete.add(stakeholders[index].stakeholderId!);
-          debugPrint(
-              'Stakeholder marked for deletion: ${stakeholders[index].stakeholderId}');
-        }
-
-        // Remove stakeholder from the list and dispose its controller
-        stakeholders.removeAt(index);
-        stakeholderNameControllers[index].dispose();
-        stakeholderNameControllers.removeAt(index);
-
-        debugPrint('Current stakeholders to delete: $stakeholdersToDelete');
-      }
-    });
-  }
-
-  void populateFields(Accident accident) {
+  Future<void> populateAccidentData(Accident accident) async {
+    // Populate accident details
     selectedConstructionField = accident.constructionField;
     selectedConstructionType = accident.constructionType;
     selectedWorkType = accident.workType;
@@ -218,6 +114,59 @@ class AccidentPageState extends State<AccidentPage> {
     // Initialize text fields for zip code and address
     _zipCodeController.text = zipcode ?? '';
     _addressController.text = addressDetail ?? '';
+
+    // Fetch stakeholders
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
+    final fetchedStakeholders =
+        await stakeholderProvider.fetchStakeholders(accident.accidentId!);
+
+    setState(() {
+      // Populate stakeholder list
+      stakeholders = fetchedStakeholders;
+
+      // Initialize controllers for stakeholder names
+      stakeholderNameControllers = List.generate(
+        stakeholders.length,
+        (index) => TextEditingController(
+          text: stakeholders[index].name.isNotEmpty
+              ? stakeholders[index].name
+              : '',
+        ),
+      );
+
+      // Add an empty stakeholder row for new input
+      _addStakeholder();
+    });
+  }
+
+  void _addStakeholder({Stakeholder? newStakeholder}) {
+    setState(() {
+      stakeholders.add(
+        newStakeholder ??
+            Stakeholder(accidentId: widget.accident?.accidentId ?? 0),
+      );
+      stakeholderNameControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeStakeholder(int index) {
+    if (index >= stakeholders.length) return;
+    setState(() {
+      final stakeholder = stakeholders[index];
+      if (stakeholder.stakeholderId != null) {
+        stakeholdersToDelete.add(stakeholder.stakeholderId!);
+        debugPrint(
+            'Stakeholder marked for deletion: ${stakeholder.stakeholderId}');
+      }
+
+      // Remove stakeholder from the list and dispose its controller
+      stakeholders.removeAt(index);
+      stakeholderNameControllers[index].dispose();
+      stakeholderNameControllers.removeAt(index);
+
+      debugPrint('Current stakeholders to delete: $stakeholdersToDelete');
+    });
   }
 
   Future<void> handleZipCodeSubmit(String zipCode) async {
@@ -245,106 +194,7 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
-  Future<void> saveAccident() async {
-    if (!isFormValid()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
-      );
-      return;
-    }
-
-    final accidentProvider =
-        Provider.of<AccidentProvider>(context, listen: false);
-    final currentUser = Supabase.instance.client.auth.currentUser;
-
-    try {
-      // Check if it's an update or new addition
-      final isUpdate = widget.accident != null;
-
-      final latestAccident = await accidentProvider
-          .fetchAccidentById(widget.accident!.accidentId!);
-      if (latestAccident.updatedAt.isAfter(widget.accident!.updatedAt)) {
-        // Conflict Detection: If the UpdatedAt of the latest data is different
-        final updatedByEmail =
-            await accidentProvider.getUpdatedByEmail(latestAccident.updatedBy);
-        if (!mounted) return;
-        final overwrite = await ConflictHelper.handleConflict(
-          context,
-          widget.accident!,
-          latestAccident.updatedAt,
-          updatedByEmail,
-        );
-
-        if (overwrite != true) {
-          // Cancel
-          return;
-        }
-      }
-
-      final now = DateTime.now().toUtc(); // Use UTC for timestamps
-      final updatedAccident = Accident(
-          accidentId: widget.accident!.accidentId,
-          constructionField: selectedConstructionField!,
-          constructionType: selectedConstructionType!,
-          workType: selectedWorkType!,
-          constructionMethod: selectedConstructionMethod!,
-          disasterCategory: selectedDisasterCategory!,
-          accidentCategory: selectedAccidentCategory!,
-          weather: selectedWeather,
-          accidentYear: accidentYear!,
-          accidentMonth: accidentMonth!,
-          accidentTime: accidentTime!,
-          accidentLocationPref: accidentLocationPref!,
-          accidentBackground: accidentBackground,
-          accidentCause: accidentCause,
-          accidentCountermeasure: accidentCountermeasure,
-          zipcode: _zipCodeController.text,
-          addressDetail: _addressController.text,
-          createdAt: isUpdate ? widget.accident!.createdAt : now,
-          createdBy: isUpdate ? widget.accident!.createdBy : currentUser!.id,
-          updatedAt: now,
-          updatedBy: currentUser!.id);
-      if (kDebugMode) {
-        print('Attempting to update accident: ${updatedAccident.toMap()}');
-      }
-
-      // Attempt to update the accident
-      final success = await accidentProvider.updateAccident(updatedAccident);
-      if (!success) {
-        throw const PostgrestException(message: 'Update failed');
-      }
-      if (kDebugMode) {
-        print('Accident updated successfully.');
-      }
-      if (!mounted) return;
-
-      // Update stakeholders
-      await StakeholderHelper.handleStakeholdersUpdate(
-        accidentId: widget.accident!.accidentId!,
-        stakeholders: stakeholders,
-        stakeholdersToDelete: stakeholdersToDelete,
-        stakeholderProvider:
-            Provider.of<StakeholderProvider>(context, listen: false),
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      // Check for conflict detection
-      debugPrint('Error saving accident: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
-      );
-    }
-  }
-
   bool isFormValid() {
-    validateFields();
-    debugPrint('Validation errors: $validationErrors');
-    return !validationErrors.containsValue(true);
-  }
-
-  void validateFields() {
     setState(() {
       validationErrors['constructionField'] = selectedConstructionField == null;
       validationErrors['constructionType'] = selectedConstructionType == null;
@@ -358,13 +208,117 @@ class AccidentPageState extends State<AccidentPage> {
       validationErrors['accidentMonth'] = accidentMonth == null;
       validationErrors['accidentTime'] = accidentTime == null;
     });
+    debugPrint('Validation errors: $validationErrors');
+    return !validationErrors.containsValue(true);
   }
 
-  Future<List<Map<String, dynamic>>> prepareStakeholdersForCreation(
-      int accidentId) async {
-    return getValidStakeholdersForCreation(accidentId)
-        .map((stakeholder) => stakeholder.toMap())
+  List<Stakeholder> _getValidStakeholders() {
+    return stakeholders
+        .where((s) => s.role.isNotEmpty && s.name.isNotEmpty)
         .toList();
+  }
+
+  Accident _buildAccident({int? accidentId, required DateTime now}) {
+    final currentUser = Supabase.instance.client.auth.currentUser!;
+    return Accident(
+      accidentId: accidentId,
+      constructionField: selectedConstructionField!,
+      constructionType: selectedConstructionType!,
+      workType: selectedWorkType!,
+      constructionMethod: selectedConstructionMethod!,
+      disasterCategory: selectedDisasterCategory!,
+      accidentCategory: selectedAccidentCategory!,
+      weather: selectedWeather,
+      accidentYear: accidentYear!,
+      accidentMonth: accidentMonth!,
+      accidentTime: accidentTime!,
+      accidentLocationPref: accidentLocationPref!,
+      accidentBackground: accidentBackground,
+      accidentCause: accidentCause,
+      accidentCountermeasure: accidentCountermeasure,
+      zipcode: _zipCodeController.text,
+      addressDetail: _addressController.text,
+      createdAt: widget.accident?.createdAt ?? now,
+      createdBy: widget.accident?.createdBy ?? currentUser.id,
+      updatedAt: now,
+      updatedBy: currentUser.id,
+    );
+  }
+
+  Future<void> _manageStakeholders(int accidentId) async {
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
+
+    // Process valid stakeholders
+    final validStakeholders = _getValidStakeholders();
+    for (var stakeholder in validStakeholders) {
+      if (stakeholder.stakeholderId == null) {
+        await stakeholderProvider
+            .addStakeholdersForAccident(accidentId, [stakeholder]);
+      } else {
+        await stakeholderProvider.updateStakeholder(stakeholder);
+      }
+    }
+
+    // Delete stakeholders
+    for (var id in stakeholdersToDelete) {
+      await stakeholderProvider.deleteStakeholder(id, accidentId);
+    }
+  }
+
+  Future<void> saveAccident() async {
+    if (!isFormValid()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.fillInRequired)),
+      );
+      return;
+    }
+
+    try {
+      final now = DateTime.now().toUtc();
+      final accidentProvider =
+          Provider.of<AccidentProvider>(context, listen: false);
+
+      // Check for conflict detection
+      final latestAccident = await accidentProvider
+          .fetchAccidentById(widget.accident!.accidentId!);
+      if (latestAccident.updatedAt.isAfter(widget.accident!.updatedAt)) {
+        final updatedByEmail =
+            await accidentProvider.getUpdatedByEmail(latestAccident.updatedBy);
+        if (!mounted) return;
+        final overwrite = await ConflictHelper.handleConflict(
+          context,
+          widget.accident!,
+          latestAccident.updatedAt,
+          updatedByEmail,
+        );
+        if (overwrite != true) return;
+      }
+
+      final updatedAccident = _buildAccident(
+        accidentId: widget.accident!.accidentId,
+        now: now,
+      );
+      if (kDebugMode) {
+        print('Attempting to update accident: ${updatedAccident.toMap()}');
+      }
+
+      // Update accident
+      final success = await accidentProvider.updateAccident(updatedAccident);
+      if (!success) throw Exception('Update failed');
+
+      // Manage stakeholders
+      await _manageStakeholders(updatedAccident.accidentId!);
+
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      // Check for conflict detection
+      if (!mounted) return;
+      debugPrint('Error saving accident: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.saveError)),
+      );
+    }
   }
 
   // Method to submit the form and add new accident data
@@ -375,64 +329,20 @@ class AccidentPageState extends State<AccidentPage> {
       );
       return;
     }
-
-    final currentUser = Supabase.instance.client.auth.currentUser;
-
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.userNotLoggedIn)),
-      );
-      return;
-    }
-
-    final supabaseService =
-        Provider.of<SupabaseService>(context, listen: false);
-
     try {
       final now = DateTime.now().toUtc();
-      final newAccident = Accident(
-          accidentId: null, // null because it's auto-generated
-          constructionField: selectedConstructionField!,
-          constructionType: selectedConstructionType!,
-          workType: selectedWorkType!,
-          constructionMethod: selectedConstructionMethod!,
-          disasterCategory: selectedDisasterCategory!,
-          accidentCategory: selectedAccidentCategory!,
-          weather: selectedWeather,
-          accidentYear: accidentYear!,
-          accidentMonth: accidentMonth!,
-          accidentTime: accidentTime!,
-          accidentLocationPref: accidentLocationPref!,
-          accidentBackground: accidentBackground,
-          accidentCause: accidentCause,
-          accidentCountermeasure: accidentCountermeasure,
-          zipcode: _zipCodeController.text,
-          addressDetail: _addressController.text,
-          stakeholders: [], // This will be handled separately
-          createdAt: now,
-          createdBy: currentUser.id,
-          updatedAt: now,
-          updatedBy: currentUser.id);
-      // Prepare stakeholders for creation
-      final stakeholders = await prepareStakeholdersForCreation(0);
 
-      if (stakeholders.isNotEmpty) {
-        // Add accident with stakeholders
-        await supabaseService.addAccidentWithStakeholders(
-          newAccident.toMap(),
-          stakeholders,
-        );
-      } else {
-        // Add accident without stakeholders
-        final accidentMap = newAccident.toMap();
-        debugPrint('Accident data to be sent: $accidentMap');
-        await supabaseService.addAccident(newAccident.toMap());
-      }
+      final accidentProvider =
+          Provider.of<AccidentProvider>(context, listen: false);
+      final newAccident = _buildAccident(accidentId: null, now: now);
+      // Add accident and get accidentId
+      final success = await accidentProvider.addAccidentWithStakeholders(
+        newAccident,
+        stakeholders,
+      );
 
-      // Navigate back with success
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      if (!success) throw Exception('Failed to add accident');
+      if (mounted) Navigator.pop(context, true);
     } catch (error) {
       // Handle any errors during the process
       debugPrint('Error adding accident: $error');
@@ -684,12 +594,9 @@ class AccidentPageState extends State<AccidentPage> {
                               items: dropdownProvider.stakeholder,
                               onChanged: (value) {
                                 setState(() {
-                                  stakeholders[index] = Stakeholder(
-                                    stakeholderId:
-                                        stakeholders[index].stakeholderId,
-                                    accidentId: stakeholders[index].accidentId,
+                                  stakeholders[index] =
+                                      stakeholders[index].copyWith(
                                     role: value ?? '',
-                                    name: stakeholders[index].name,
                                   );
                                 });
                               },

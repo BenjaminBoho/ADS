@@ -1,3 +1,4 @@
+import 'package:accident_data_storage/models/stakeholder.dart';
 import 'package:accident_data_storage/services/address_services.dart';
 import 'package:flutter/material.dart';
 import '../models/accident.dart';
@@ -64,7 +65,7 @@ class AccidentProvider with ChangeNotifier {
   // Add a new accident
   Future<bool> addAccident(Accident accidentData) async {
     try {
-      await _supabaseService.addAccident(accidentData.toMap());
+      await _supabaseService.addAccident(accidentData);
       notifyListeners();
       return true;
     } catch (e) {
@@ -74,7 +75,7 @@ class AccidentProvider with ChangeNotifier {
   }
 
   // Update an existing accident
-  Future<bool> updateAccident(Accident accidentData, {bool isOverwrite = false}) async {
+  Future<bool> updateAccident(Accident accidentData) async {
     try {
       final accidentId = accidentData.accidentId;
       if (accidentId == null) {
@@ -82,14 +83,7 @@ class AccidentProvider with ChangeNotifier {
         return false;
       }
 
-      // Prepare the updated accident data
-      final updatedAccidentData = accidentData.toMap();
-
-      await _supabaseService.updateAccident(
-        accidentId,
-        updatedAccidentData,
-        isOverwrite: isOverwrite,
-      );
+      await _supabaseService.updateAccident(accidentId, accidentData);
 
       notifyListeners();
       return true;
@@ -134,5 +128,18 @@ class AccidentProvider with ChangeNotifier {
 
   Future<Accident> fetchAccidentById(int accidentId) async {
     return await _supabaseService.fetchAccidentById(accidentId);
+  }
+
+  Future<bool> addAccidentWithStakeholders(
+      Accident accident, List<Stakeholder> stakeholders) async {
+    try {
+      await _supabaseService.addAccidentWithStakeholders(
+          accident, stakeholders);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error adding accident with stakeholders: $e');
+      return false;
+    }
   }
 }

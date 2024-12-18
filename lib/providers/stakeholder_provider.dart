@@ -13,18 +13,6 @@ class StakeholderProvider with ChangeNotifier {
   List<Stakeholder> get stakeholders => _stakeholders;
   bool get isLoading => _isLoading;
 
-  /// Fetch all stakeholders for all accidents
-  Future<Map<int, List<Stakeholder>>> fetchAllStakeholdersForAccidents(
-      List<int> accidentIds) async {
-    Map<int, List<Stakeholder>> stakeholdersMap = {};
-
-    for (int accidentId in accidentIds) {
-      stakeholdersMap[accidentId] = await fetchStakeholders(accidentId);
-    }
-
-    return stakeholdersMap;
-  }
-
   /// Fetch stakeholders for a specific accident
   Future<List<Stakeholder>> fetchStakeholders(int accidentId) async {
     _isLoading = true;
@@ -44,7 +32,6 @@ class StakeholderProvider with ChangeNotifier {
           return Stakeholder.fromMap(data as Map<String, dynamic>);
         }).toList();
       }
-      
     } catch (e, stackTrace) {
       debugPrint("Error fetching stakeholders: $e");
       debugPrint("Stack trace: $stackTrace");
@@ -61,17 +48,17 @@ class StakeholderProvider with ChangeNotifier {
   Future<void> addStakeholdersForAccident(
       int accidentId, List<Stakeholder> stakeholderList) async {
     try {
-      for (var stakeholder in stakeholderList) {
-        final updatedStakeholder = Stakeholder(
-          stakeholderId: null,
-          accidentId: accidentId,
-          role: stakeholder.role,
-          name: stakeholder.name,
-        );
+      // Map stakeholders to assign the accidentId
+      final updatedStakeholders = stakeholderList.map((stakeholder) {
+        return stakeholder.withAccidentId(accidentId);
+      }).toList();
 
-        await _supabaseService.addStakeholder(updatedStakeholder.toMap());
+      // Insert each stakeholder individually
+      for (var stakeholder in updatedStakeholders) {
+         await _supabaseService.addStakeholder(stakeholder);
       }
 
+      // Fetch updated stakeholders
       await fetchStakeholders(accidentId);
     } catch (e) {
       debugPrint("Error adding stakeholders: $e");
@@ -91,7 +78,7 @@ class StakeholderProvider with ChangeNotifier {
 
       await _supabaseService.updateStakeholder(
         stakeholderId,
-        stakeholder.toMap(),
+        stakeholder,
       );
 
       await fetchStakeholders(stakeholder.accidentId);
@@ -110,11 +97,5 @@ class StakeholderProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Error deleting stakeholder with ID: $stakeholderId: $e');
     }
-  }
-
-  /// Clear the stakeholders list (e.g., when changing accidents)
-  void clearStakeholders() {
-    _stakeholders = [];
-    notifyListeners();
   }
 }

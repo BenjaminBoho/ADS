@@ -117,16 +117,9 @@ class SupabaseService {
         .itemName); // Wrap the result in Future.value to match Future<String> type
   }
 
-  Future<void> addAccident(Map<String, dynamic> accidentData) async {
+  Future<void> addAccident(Accident accidentData) async {
     try {
-      final currentUser = _client.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception("User is not logged in");
-      }
-      accidentData['CreatedBy'] = currentUser.id;
-      accidentData['UpdatedBy'] = currentUser.id;
-
-      await _client.from('Accidents').insert(accidentData);
+      await _client.from('Accidents').insert(accidentData.toMap());
     } catch (e) {
       if (kDebugMode) {
         print('Error adding accident: $e');
@@ -134,31 +127,18 @@ class SupabaseService {
     }
   }
 
-  Future<void> updateAccident(int accidentId, Map<String, dynamic> accidentData,
-      {bool isOverwrite = false}) async {
+  Future<void> updateAccident(int accidentId, Accident accidentData) async {
     try {
-      final currentUser = _client.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception("User is not logged in");
-      }
-      accidentData['UpdatedBy'] = currentUser.id;
-
       if (kDebugMode) {
         print('Updating Accident ID: $accidentId');
         print('Update Data: $accidentData');
       }
 
-      final response = isOverwrite
-          ? await _client
-              .from('Accidents')
-              .update(accidentData)
-              .eq('AccidentId', accidentId)
-              .select()
-          : await _client
-              .from('Accidents')
-              .update(accidentData)
-              .eq('AccidentId', accidentId)
-              .select();
+      final response = await _client
+          .from('Accidents')
+          .update(accidentData.toMap())
+          .eq('AccidentId', accidentId)
+          .select();
 
       if (kDebugMode) {
         print('Response: $response');
@@ -181,9 +161,9 @@ class SupabaseService {
     }
   }
 
-  Future<void> addStakeholder(Map<String, dynamic> stakeholderData) async {
+  Future<void> addStakeholder(Stakeholder stakeholderData) async {
     try {
-      await _client.from('Stakeholders').insert(stakeholderData);
+      await _client.from('Stakeholders').insert(stakeholderData.toMap());
     } catch (e) {
       if (kDebugMode) {
         print('Error adding stakeholders: $e');
@@ -191,22 +171,25 @@ class SupabaseService {
     }
   }
 
-  Future<int> addAccidentWithStakeholders(Map<String, dynamic> accidentData,
-      List<Map<String, dynamic>> stakeholders) async {
+  Future<int> addAccidentWithStakeholders(
+      Accident accidentData, List<Stakeholder> stakeholders) async {
     try {
       // Insert the accident and return the created accidentId
       final response =
-          await _client.from('Accidents').insert(accidentData).select();
+          await _client.from('Accidents').insert(accidentData.toMap()).select();
       if (response.isNotEmpty) {
         final accidentId = response.first['AccidentId'] as int;
 
-        // If there are stakeholders, insert them
-        if (stakeholders.isNotEmpty) {
-          for (var stakeholder in stakeholders) {
-            stakeholder['AccidentId'] = accidentId;
-          }
-          await _client.from('Stakeholders').insert(stakeholders);
-        }
+        // Assign accidentId to each stakeholder
+        final updatedStakeholders = stakeholders.map((stakeholder) {
+        return stakeholder.withAccidentId(accidentId);
+      }).toList();
+
+      // Insert stakeholders
+      if (updatedStakeholders.isNotEmpty) {
+        await _client.from('Stakeholders').insert(
+            updatedStakeholders.map((s) => s.toMap()).toList());
+      }
 
         return accidentId;
       }
@@ -217,14 +200,13 @@ class SupabaseService {
     }
   }
 
-  Future<void> updateStakeholder(
-      int stakeholderId, Map<String, dynamic> data) async {
+  Future<void> updateStakeholder(int stakeholderId, Stakeholder data) async {
     try {
       debugPrint(
           'Executing update query for stakeholder ID: $stakeholderId with data: $data');
       await _client
           .from('Stakeholders')
-          .update(data)
+          .update(data.toMap())
           .eq('StakeholderId', stakeholderId);
       debugPrint('Update query executed for stakeholder ID: $stakeholderId');
     } catch (e) {

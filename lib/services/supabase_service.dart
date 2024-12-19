@@ -119,7 +119,7 @@ class SupabaseService {
 
   Future<void> addAccident(Accident accidentData) async {
     try {
-      await _client.from('Accidents').insert(accidentData);
+      await _client.from('Accidents').insert(accidentData.toMap());
     } catch (e) {
       if (kDebugMode) {
         print('Error adding accident: $e');
@@ -181,6 +181,7 @@ class SupabaseService {
 
         // Assign accidentId to each stakeholder
         final updatedStakeholders = stakeholders.map((stakeholder) {
+          
           return stakeholder.withAccidentId(accidentId);
         }).toList();
         // Insert stakeholders
@@ -199,8 +200,7 @@ class SupabaseService {
     }
   }
 
-  Future<void> updateStakeholder(
-      int stakeholderId, Stakeholder data) async {
+  Future<void> updateStakeholder(int stakeholderId, Stakeholder data) async {
     try {
       debugPrint(
           'Executing update query for stakeholder ID: $stakeholderId with data: $data');

@@ -52,11 +52,13 @@ class StakeholderProvider with ChangeNotifier {
       final updatedStakeholders = stakeholderList.map((stakeholder) {
         return stakeholder.withAccidentId(accidentId);
       }).toList();
+
       // Insert each stakeholder individually
       for (var stakeholder in updatedStakeholders) {
         await _supabaseService.addStakeholder(stakeholder);
       }
 
+      // Fetch updated stakeholders
       await fetchStakeholders(accidentId);
     } catch (e) {
       debugPrint("Error adding stakeholders: $e");

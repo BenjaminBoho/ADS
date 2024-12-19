@@ -34,6 +34,20 @@ class Stakeholder {
     );
   }
 
+  Stakeholder copyWith({
+    int? stakeholderId,
+    int? accidentId,
+    String? role,
+    String? name,
+  }) {
+    return Stakeholder(
+      stakeholderId: stakeholderId ?? this.stakeholderId,
+      accidentId: accidentId ?? this.accidentId,
+      role: role ?? this.role,
+      name: name ?? this.name,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       if (stakeholderId != null) 'StakeholderId': stakeholderId,

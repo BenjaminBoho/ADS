@@ -31,8 +31,7 @@ class SortButtonRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: sortOptions.map((option) {
-          final isCurrentSort =
-              accidentProvider.currentSortBy == option['sortBy'];
+          final isCurrentSort = accidentProvider.currentSortBy == option['sortBy'];
           return TextButton(
             onPressed: () => onSortItemPressed(option['sortBy']!),
             child: Row(

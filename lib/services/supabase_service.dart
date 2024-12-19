@@ -133,7 +133,6 @@ class SupabaseService {
         print('Updating Accident ID: $accidentId');
         print('Update Data: $accidentData');
       }
-
       final response = await _client
           .from('Accidents')
           .update(accidentData.toMap())
@@ -182,14 +181,15 @@ class SupabaseService {
 
         // Assign accidentId to each stakeholder
         final updatedStakeholders = stakeholders.map((stakeholder) {
-        return stakeholder.withAccidentId(accidentId);
-      }).toList();
-
-      // Insert stakeholders
-      if (updatedStakeholders.isNotEmpty) {
-        await _client.from('Stakeholders').insert(
-            updatedStakeholders.map((s) => s.toMap()).toList());
-      }
+          
+          return stakeholder.withAccidentId(accidentId);
+        }).toList();
+        // Insert stakeholders
+        if (updatedStakeholders.isNotEmpty) {
+          await _client
+              .from('Stakeholders')
+              .insert(updatedStakeholders.map((s) => s.toMap()).toList());
+        }
 
         return accidentId;
       }

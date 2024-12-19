@@ -82,7 +82,6 @@ class AccidentProvider with ChangeNotifier {
         debugPrint('Error: Accident ID is null');
         return false;
       }
-
       await _supabaseService.updateAccident(accidentId, accidentData);
 
       notifyListeners();

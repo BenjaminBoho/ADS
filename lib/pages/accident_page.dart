@@ -274,6 +274,13 @@ class AccidentPageState extends State<AccidentPage> {
       return;
     }
 
+
+    final accidentProvider =
+        Provider.of<AccidentProvider>(context, listen: false);
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
     try {
       final now = DateTime.now().toUtc();
       final accidentProvider =
@@ -307,8 +314,27 @@ class AccidentPageState extends State<AccidentPage> {
       final success = await accidentProvider.updateAccident(updatedAccident);
       if (!success) throw Exception('Update failed');
 
-      // Manage stakeholders
-      await _manageStakeholders(updatedAccident.accidentId!);
+
+      // Handle Stakeholders
+      final validStakeholders = stakeholders
+          .where((s) => s.role.isNotEmpty && s.name.isNotEmpty)
+          .toList();
+
+      // Add or update stakeholders
+      for (var stakeholder in validStakeholders) {
+        if (stakeholder.stakeholderId == null) {
+          await stakeholderProvider.addStakeholdersForAccident(
+              updatedAccident.accidentId!, [stakeholder]);
+        } else {
+          await stakeholderProvider.updateStakeholder(stakeholder);
+        }
+      }
+
+      // Delete stakeholders
+      for (var id in stakeholdersToDelete) {
+        await stakeholderProvider.deleteStakeholder(
+            id, updatedAccident.accidentId!);
+      }
 
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -321,6 +347,28 @@ class AccidentPageState extends State<AccidentPage> {
     }
   }
 
+  bool isFormValid() {
+    validateFields();
+    debugPrint('Validation errors: $validationErrors');
+    return !validationErrors.containsValue(true);
+  }
+
+  void validateFields() {
+    setState(() {
+      validationErrors['constructionField'] = selectedConstructionField == null;
+      validationErrors['constructionType'] = selectedConstructionType == null;
+      validationErrors['workType'] = selectedWorkType == null;
+      validationErrors['constructionMethod'] =
+          selectedConstructionMethod == null;
+      validationErrors['disasterCategory'] = selectedDisasterCategory == null;
+      validationErrors['accidentCategory'] = selectedAccidentCategory == null;
+      validationErrors['accidentLocationPref'] = accidentLocationPref == null;
+      validationErrors['accidentYear'] = accidentYear == null;
+      validationErrors['accidentMonth'] = accidentMonth == null;
+      validationErrors['accidentTime'] = accidentTime == null;
+    });
+  }
+  
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
     if (!isFormValid()) {
@@ -329,8 +377,50 @@ class AccidentPageState extends State<AccidentPage> {
       );
       return;
     }
+
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
+    final supabaseService =
+        Provider.of<SupabaseService>(context, listen: false);
+
     try {
       final now = DateTime.now().toUtc();
+      final newAccident = Accident(
+          accidentId: null, // null because it's auto-generated
+          constructionField: selectedConstructionField!,
+          constructionType: selectedConstructionType!,
+          workType: selectedWorkType!,
+          constructionMethod: selectedConstructionMethod!,
+          disasterCategory: selectedDisasterCategory!,
+          accidentCategory: selectedAccidentCategory!,
+          weather: selectedWeather,
+          accidentYear: accidentYear!,
+          accidentMonth: accidentMonth!,
+          accidentTime: accidentTime!,
+          accidentLocationPref: accidentLocationPref!,
+          accidentBackground: accidentBackground,
+          accidentCause: accidentCause,
+          accidentCountermeasure: accidentCountermeasure,
+          zipcode: _zipCodeController.text,
+          addressDetail: _addressController.text,
+          stakeholders: [], // This will be handled separately
+          createdAt: now,
+          createdBy: currentUser!.id,
+          updatedAt: now,
+          updatedBy: currentUser.id);
+
+      if (stakeholders.isNotEmpty) {
+        // Add accident with stakeholders
+        await supabaseService.addAccidentWithStakeholders(
+          newAccident,
+          stakeholders,
+        );
+      } else {
+        // Add accident without stakeholders
+        final accidentMap = newAccident.toMap();
+        debugPrint('Accident data to be sent: $accidentMap');
+        await supabaseService.addAccident(newAccident);
+      }
 
       final accidentProvider =
           Provider.of<AccidentProvider>(context, listen: false);
@@ -602,6 +692,7 @@ class AccidentPageState extends State<AccidentPage> {
                               },
                             ),
                           ),
+
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 5,

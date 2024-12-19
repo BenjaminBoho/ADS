@@ -55,7 +55,7 @@ class StakeholderProvider with ChangeNotifier {
 
       // Insert each stakeholder individually
       for (var stakeholder in updatedStakeholders) {
-         await _supabaseService.addStakeholder(stakeholder);
+        await _supabaseService.addStakeholder(stakeholder);
       }
 
       // Fetch updated stakeholders

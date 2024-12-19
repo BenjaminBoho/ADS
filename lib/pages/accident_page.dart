@@ -4,7 +4,6 @@ import 'package:accident_data_storage/providers/dropdown_provider.dart';
 import 'package:accident_data_storage/providers/stakeholder_provider.dart';
 import 'package:accident_data_storage/services/supabase_service.dart';
 import 'package:accident_data_storage/utils/conflict_helper.dart';
-import 'package:accident_data_storage/utils/stakeholder_helper.dart';
 import 'package:accident_data_storage/widgets/delete_confirmation_dialog.dart';
 import 'package:accident_data_storage/widgets/dropdown_widget.dart';
 import 'package:accident_data_storage/widgets/picker_util.dart';
@@ -255,6 +254,8 @@ class AccidentPageState extends State<AccidentPage> {
 
     final accidentProvider =
         Provider.of<AccidentProvider>(context, listen: false);
+    final stakeholderProvider =
+        Provider.of<StakeholderProvider>(context, listen: false);
     final currentUser = Supabase.instance.client.auth.currentUser;
 
     try {
@@ -318,14 +319,26 @@ class AccidentPageState extends State<AccidentPage> {
       }
       if (!mounted) return;
 
-      // Update stakeholders
-      await StakeholderHelper.handleStakeholdersUpdate(
-        accidentId: widget.accident!.accidentId!,
-        stakeholders: stakeholders,
-        stakeholdersToDelete: stakeholdersToDelete,
-        stakeholderProvider:
-            Provider.of<StakeholderProvider>(context, listen: false),
-      );
+      // Handle Stakeholders
+      final validStakeholders = stakeholders
+          .where((s) => s.role.isNotEmpty && s.name.isNotEmpty)
+          .toList();
+
+      // Add or update stakeholders
+      for (var stakeholder in validStakeholders) {
+        if (stakeholder.stakeholderId == null) {
+          await stakeholderProvider.addStakeholdersForAccident(
+              updatedAccident.accidentId!, [stakeholder]);
+        } else {
+          await stakeholderProvider.updateStakeholder(stakeholder);
+        }
+      }
+
+      // Delete stakeholders
+      for (var id in stakeholdersToDelete) {
+        await stakeholderProvider.deleteStakeholder(
+            id, updatedAccident.accidentId!);
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -360,13 +373,6 @@ class AccidentPageState extends State<AccidentPage> {
     });
   }
 
-  Future<List<Map<String, dynamic>>> prepareStakeholdersForCreation(
-      int accidentId) async {
-    return getValidStakeholdersForCreation(accidentId)
-        .map((stakeholder) => stakeholder.toMap())
-        .toList();
-  }
-
   // Method to submit the form and add new accident data
   Future<void> addAccident() async {
     if (!isFormValid()) {
@@ -377,13 +383,6 @@ class AccidentPageState extends State<AccidentPage> {
     }
 
     final currentUser = Supabase.instance.client.auth.currentUser;
-
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.userNotLoggedIn)),
-      );
-      return;
-    }
 
     final supabaseService =
         Provider.of<SupabaseService>(context, listen: false);
@@ -410,23 +409,21 @@ class AccidentPageState extends State<AccidentPage> {
           addressDetail: _addressController.text,
           stakeholders: [], // This will be handled separately
           createdAt: now,
-          createdBy: currentUser.id,
+          createdBy: currentUser!.id,
           updatedAt: now,
           updatedBy: currentUser.id);
-      // Prepare stakeholders for creation
-      final stakeholders = await prepareStakeholdersForCreation(0);
 
       if (stakeholders.isNotEmpty) {
         // Add accident with stakeholders
         await supabaseService.addAccidentWithStakeholders(
-          newAccident.toMap(),
+          newAccident,
           stakeholders,
         );
       } else {
         // Add accident without stakeholders
         final accidentMap = newAccident.toMap();
         debugPrint('Accident data to be sent: $accidentMap');
-        await supabaseService.addAccident(newAccident.toMap());
+        await supabaseService.addAccident(newAccident);
       }
 
       // Navigate back with success
@@ -684,17 +681,15 @@ class AccidentPageState extends State<AccidentPage> {
                               items: dropdownProvider.stakeholder,
                               onChanged: (value) {
                                 setState(() {
-                                  stakeholders[index] = Stakeholder(
-                                    stakeholderId:
-                                        stakeholders[index].stakeholderId,
-                                    accidentId: stakeholders[index].accidentId,
+                                  stakeholders[index] =
+                                      stakeholders[index].copyWith(
                                     role: value ?? '',
-                                    name: stakeholders[index].name,
                                   );
                                 });
                               },
                             ),
                           ),
+
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 5,

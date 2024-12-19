@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/accident_provider.dart';
-import 'sort_button_widget.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SortButtonRow extends StatelessWidget {
@@ -32,12 +31,21 @@ class SortButtonRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: sortOptions.map((option) {
-          return SortButton(
-            label: option['label']!,
-            sortBy: option['sortBy']!,
-            currentSortBy: accidentProvider.currentSortBy,
-            isAscending: accidentProvider.isAscending,
-            onSortItemPressed: onSortItemPressed,
+          final isCurrentSort =
+              accidentProvider.currentSortBy == option['sortBy'];
+          return TextButton(
+            onPressed: () => onSortItemPressed(option['sortBy']!),
+            child: Row(
+              children: [
+                Text(option['label']!),
+                if (isCurrentSort)
+                  Icon(
+                    accidentProvider.isAscending
+                        ? Icons.arrow_downward
+                        : Icons.arrow_upward,
+                  ),
+              ],
+            ),
           );
         }).toList(),
       ),

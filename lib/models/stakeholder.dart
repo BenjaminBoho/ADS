@@ -11,6 +11,20 @@ class Stakeholder {
     this.name = '',
   });
 
+  Stakeholder copyWith({
+    int? stakeholderId,
+    int? accidentId,
+    String? role,
+    String? name,
+  }) {
+    return Stakeholder(
+      stakeholderId: stakeholderId ?? this.stakeholderId,
+      accidentId: accidentId ?? this.accidentId,
+      role: role ?? this.role,
+      name: name ?? this.name,
+    );
+  }
+
   Stakeholder withAccidentId(int newAccidentId) {
     return Stakeholder(
       stakeholderId: stakeholderId,
